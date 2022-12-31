@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33122.133
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MultiplayerLevelInformation", "MultiplayerLevelInformation\MultiplayerLevelInformation.csproj", "{5070DAD9-7105-4B0A-AE8D-8DB0C1A96127}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5070DAD9-7105-4B0A-AE8D-8DB0C1A96127}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5070DAD9-7105-4B0A-AE8D-8DB0C1A96127}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5070DAD9-7105-4B0A-AE8D-8DB0C1A96127}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5070DAD9-7105-4B0A-AE8D-8DB0C1A96127}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E6C02B58-0B96-4DF0-BFD7-F18BE7CFFC05}
+	EndGlobalSection
+EndGlobal

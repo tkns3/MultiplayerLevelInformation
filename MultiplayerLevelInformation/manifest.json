@@ -1,0 +1,15 @@
+﻿{
+  "$schema": "https://raw.githubusercontent.com/bsmg/BSIPA-MetadataFileSchema/master/Schema.json",
+  "id": "MultiplayerLevelInformation",
+  "name": "MultiplayerLevelInformation",
+  "author": "tkns3",
+  "version": "0.1.0",
+  "description": "Display information such as NJS for custom maps in multiplayer lobbies.",
+  "gameVersion": "1.20.0",
+  "dependsOn": {
+    "BSIPA": "^4.2.2"
+  },
+  "links": {
+    "project-home": "https://github.com/tkns3/MultiplayerLevelInformation"
+  }
+}
