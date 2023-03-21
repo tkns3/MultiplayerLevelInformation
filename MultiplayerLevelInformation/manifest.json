@@ -3,7 +3,7 @@
   "id": "MultiplayerLevelInformation",
   "name": "MultiplayerLevelInformation",
   "author": "tkns3",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Display information such as NJS for custom maps in multiplayer lobbies.",
   "gameVersion": "1.25.0",
   "dependsOn": {
