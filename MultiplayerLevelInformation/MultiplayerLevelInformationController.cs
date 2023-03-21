@@ -1,16 +1,11 @@
-﻿using MultiplayerLevelInformation.Configuration;
-using HMUI;
+﻿using HMUI;
+using MultiplayerLevelInformation.Configuration;
 using MultiplayerLevelInformation.Utils;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
-using System.Runtime.CompilerServices;
 
 namespace MultiplayerLevelInformation
 {
@@ -23,6 +18,8 @@ namespace MultiplayerLevelInformation
         public static MultiplayerLevelInformationController Instance { get; private set; }
 
         private static Dictionary<string, APIs.BeatSaver.MapDetail> _mapDetailCaches = new Dictionary<string, APIs.BeatSaver.MapDetail>();
+
+        private static string _lastText = "";
 
         // These methods are automatically called by Unity, you should remove any you aren't using.
         #region Monobehaviour Messages
@@ -64,7 +61,14 @@ namespace MultiplayerLevelInformation
         /// </summary>
         private void Update()
         {
+            
+        }
 
+        public void ShowBeatmapInformation()
+        {
+            Plugin.Log.Info($"ShowBeatmapInformation");
+            CurvedTextMeshPro textMesh = gameObject.GetComponentInChildren<CurvedTextMeshPro>();
+            textMesh.text = _lastText;
         }
 
         public void HideBeatmapInformation()
@@ -76,7 +80,12 @@ namespace MultiplayerLevelInformation
 
         public void ShowBeatmapInformation(PreviewDifficultyBeatmap beatmap)
         {
-            Plugin.Log.Info($"ShowBeatmapInformation {beatmap.beatmapLevel.levelID}");
+            ShowBeatmapInformation(beatmap.beatmapLevel.levelID, beatmap.beatmapDifficulty, beatmap.beatmapCharacteristic.serializedName);
+        }
+
+        public void ShowBeatmapInformation(string levelID, BeatmapDifficulty difficulty, string mode)
+        {
+            Plugin.Log.Info($"ShowBeatmapInformation {levelID}");
 
             CurvedTextMeshPro textMesh = gameObject.GetComponentInChildren<CurvedTextMeshPro>();
             if (textMesh == null)
@@ -84,18 +93,20 @@ namespace MultiplayerLevelInformation
                 return;
             }
 
-            if (beatmap.beatmapLevel.levelID.Length != 53)
+            if (levelID.Length != 53)
             {
-                textMesh.text = $"{beatmap.beatmapLevel.levelID} is not custom level.";
+                textMesh.text = $"{levelID} is not custom level.";
                 Plugin.Log.Info(textMesh.text);
                 return;
             }
 
-            string hash = beatmap.beatmapLevel.levelID.Substring(13);
+            string hash = levelID.Substring(13);
 
             if (_mapDetailCaches.TryGetValue(hash, out var _map))
             {
-                textMesh.text = LevelInformationText(hash, _map, beatmap.beatmapDifficulty, beatmap.beatmapCharacteristic.serializedName);
+                textMesh.text = _lastText = LevelInformationText(hash, _map, difficulty, mode);
+                _lastText = textMesh.text;
+                Plugin.Log.Info(textMesh.text);
             }
             else
             {
@@ -111,17 +122,19 @@ namespace MultiplayerLevelInformation
                             {
                                 _mapDetailCaches.Add(hash, map);
                             }
-                            textMesh.text = LevelInformationText(hash, map, beatmap.beatmapDifficulty, beatmap.beatmapCharacteristic.serializedName);
+                            textMesh.text = LevelInformationText(hash, map, difficulty, mode);
                         }
                         else
                         {
-                            textMesh.text = $"failed.";
+                            textMesh.text = $"Selected HASH=[{hash}]\nFailed to get map data from Beat Server.";
                         }
                     }
                     catch (Exception e)
                     {
-                        textMesh.text = e.ToString();
+                        textMesh.text = $"Selected HASH=[{hash}]\n{e.Message}";
                     }
+                    _lastText = textMesh.text;
+                    Plugin.Log.Info(textMesh.text);
                 }
                 wrapper();
             }
@@ -132,27 +145,27 @@ namespace MultiplayerLevelInformation
             Plugin.Log.Info($"LevelInformationText {hash}, {difficulty}, {mode}");
             if (map.versions == null)
             {
-                return "map.versions == null";
+                return $"Selected HASH=[{hash}]\nmap.versions == null";
             }
             if (map.versions.Length == 0)
             {
-                return "map.versions.Length == 0";
+                return $"Selected HASH=[{hash}]\nmap.versions.Length == 0";
             }
             if (map.versions[0].diffs == null)
             {
-                return "map.versions[0].diffs == null";
+                return $"Selected HASH=[{hash}]\nmap.versions[0].diffs == null";
             }
             if (map.id == null)
             {
-                return "map.id == null";
+                return $"Selected HASH=[{hash}]\nmap.id == null";
             }
             if (map.metadata == null)
             {
-                return "map.metadata == null";
+                return $"Selected HASH=[{hash}]\nmap.metadata == null";
             }
             if (map.metadata.levelAuthorName == null)
             {
-                return "map.metadata.levelAuthorNam == null";
+                return $"Selected HASH=[{hash}]\nmap.metadata.levelAuthorName == null";
             }
             if (!map.versions[0].hash.ToLower().Equals(hash.ToLower()))
             {
@@ -177,7 +190,6 @@ namespace MultiplayerLevelInformation
                 s += $"DURATION=[{(int)duration / 60}:{(int)duration % 60:00}] BPM=[{bpm}]\n";
                 s += $"NPS=[{nps:#.##}] NOTE=[{notes}] OB=[{ob}] BOMB=[{bombs}]\n";
                 s += $"NJS=[{njs}] JD=[{jd:#.##}] OFFSET=[{offset}] RT=[{rt:#.##}]";
-                Plugin.Log.Info(s);
                 return s;
             }
             catch (Exception)

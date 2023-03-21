@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System.Net.Http;
+using System.Security.Policy;
 using System.Threading.Tasks;
 
 namespace MultiplayerLevelInformation.APIs
@@ -15,7 +16,9 @@ namespace MultiplayerLevelInformation.APIs
                 _client = new HttpClient();
             }
 
-            var res = await _client.GetStringAsync($"https://api.beatsaver.com/maps/hash/{hash}");
+            var url = $"https://api.beatsaver.com/maps/hash/{hash}";
+            Plugin.Log.Info(url);
+            var res = await _client.GetStringAsync(url);
             var map = JsonConvert.DeserializeObject<APIs.BeatSaver.MapDetail>(res);
             return map;
         }

@@ -1,15 +1,8 @@
 ﻿using HarmonyLib;
 using IPA;
-using IPA.Config;
 using IPA.Config.Stores;
 using IPA.Loader;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using IPALogger = IPA.Logging.Logger;
 
 namespace MultiplayerLevelInformation
@@ -22,6 +15,7 @@ namespace MultiplayerLevelInformation
 
         internal static Plugin Instance { get; private set; }
         internal static IPALogger Log { get; private set; }
+        internal static string UserID { get; private set; }
 
         [Init]
         /// <summary>
@@ -35,13 +29,13 @@ namespace MultiplayerLevelInformation
             Log = logger;
             _metadata = metadata;
             _harmony = new Harmony("com.github.tkns3.MultiplayerLevelInformation");
-            Log.Info("MultiplayerLevelInformation initialized.");
+            Log.Info("initialized.");
         }
 
         #region BSIPA Config
         //Uncomment to use BSIPA's config
         [Init]
-        public void InitWithConfig(Config conf)
+        public void InitWithConfig(IPA.Config.Config conf)
         {
             Configuration.PluginConfig.Instance = conf.Generated<Configuration.PluginConfig>();
             Log.Debug("Config loaded");
@@ -51,7 +45,16 @@ namespace MultiplayerLevelInformation
         [OnEnable]
         public void OnEnable()
         {
-            _harmony.PatchAll(_metadata.Assembly);
+            if (PluginManager.GetPlugin("BeatSaberPlus_Multiplayer") != null)
+            {
+                Log.Info("OnEnable: for BeatTogether and MultiPlayer+.");
+                _harmony.PatchAll(_metadata.Assembly);
+            }
+            else
+            {
+                Log.Info("OnEnable: for BeatTogether.");
+                HarmonyPatches.Util.PatchForBeatTogether(_harmony);
+            }
         }
 
         [OnDisable]
@@ -65,13 +68,20 @@ namespace MultiplayerLevelInformation
         {
             Log.Debug("OnApplicationStart");
             new GameObject("MultiplayerLevelInformationController").AddComponent<MultiplayerLevelInformationController>();
+
+            GetUserID();
+        }
+
+        public async void GetUserID()
+        {
+            var userInfo = await BS_Utils.Gameplay.GetUserInfo.GetUserAsync();
+            UserID = userInfo.platformUserId;
         }
 
         [OnExit]
         public void OnApplicationQuit()
         {
             Log.Debug("OnApplicationQuit");
-
         }
     }
 }
