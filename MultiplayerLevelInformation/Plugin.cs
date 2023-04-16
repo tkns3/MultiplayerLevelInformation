@@ -1,81 +1,102 @@
-﻿using HarmonyLib;
-using IPA;
-using IPA.Config.Stores;
+﻿using IPA;
 using IPA.Loader;
+using MultiplayerLevelInformation.HarmonyPatches;
+using MultiplayerLevelInformation.Utils;
+using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using IPALogger = IPA.Logging.Logger;
 
 namespace MultiplayerLevelInformation
 {
-    [Plugin(RuntimeOptions.DynamicInit)]
+    [Plugin(RuntimeOptions.SingleStartInit)]
     public class Plugin
     {
         private readonly PluginMetadata _metadata;
-        private readonly Harmony _harmony;
+        private readonly Patcher _patcher;
 
-        internal static Plugin Instance { get; private set; }
         internal static IPALogger Log { get; private set; }
-        internal static string UserID { get; private set; }
+        internal static string OwnUserID { get; private set; }
 
         [Init]
-        /// <summary>
-        /// Called when the plugin is first loaded by IPA (either when the game starts or when the plugin is enabled if it starts disabled).
-        /// [Init] methods that use a Constructor or called before regular methods like InitWithConfig.
-        /// Only use [Init] with one Constructor.
-        /// </summary>
         public Plugin(IPALogger logger, PluginMetadata metadata)
         {
-            Instance = this;
             Log = logger;
             _metadata = metadata;
-            _harmony = new Harmony("com.github.tkns3.MultiplayerLevelInformation");
-            Log.Info("initialized.");
+            _patcher = new Patcher("com.github.tkns3.MultiplayerLevelInformation");
+            Log.Debug("initialized.");
         }
 
         #region BSIPA Config
         //Uncomment to use BSIPA's config
+        /*
         [Init]
         public void InitWithConfig(IPA.Config.Config conf)
         {
-            Configuration.PluginConfig.Instance = conf.Generated<Configuration.PluginConfig>();
-            Log.Debug("Config loaded");
         }
+        */
         #endregion
 
         [OnEnable]
         public void OnEnable()
         {
-            if (PluginManager.GetPlugin("BeatSaberPlus_Multiplayer") != null)
+            if (PluginManager.GetPlugin("BeatSaberPlus_Multiplayer") == null)
             {
-                Log.Info("OnEnable: for BeatTogether and MultiPlayer+.");
-                _harmony.PatchAll(_metadata.Assembly);
+                Log.Info("BeatSaberPlus_Multiplayer is Disable.");
             }
             else
             {
-                Log.Info("OnEnable: for BeatTogether.");
-                HarmonyPatches.Util.PatchForBeatTogether(_harmony);
+                Log.Info("BeatSaberPlus_Multiplayer is Enable.");
+                _patcher.PatchForMultiplayerPlus();
+            }
+
+            if (PluginManager.GetPlugin("BeatTogether") == null)
+            {
+                Log.Info("BeatTogether is Disable.");
+            }
+            else
+            {
+                Log.Info("BeatTogether is Enable.");
+                _patcher.PatchForBeatTogether();
             }
         }
 
         [OnDisable]
         public void OnDisable()
         {
-            _harmony.UnpatchSelf();
+            _patcher.Unpatch();
         }
 
         [OnStart]
         public void OnApplicationStart()
         {
             Log.Debug("OnApplicationStart");
+
+            async void getUserID()
+            {
+                var userInfo = await BS_Utils.Gameplay.GetUserInfo.GetUserAsync();
+                OwnUserID = userInfo.platformUserId;
+            }
+            getUserID();
+
             new GameObject("MultiplayerLevelInformationController").AddComponent<MultiplayerLevelInformationController>();
 
-            GetUserID();
+            //テスト用 起動後のメニュー画面でUIを表示したい場合はコメントを外す
+            //SceneManager.activeSceneChanged += OnActiveSceneChanged;
         }
 
-        public async void GetUserID()
+        private void OnActiveSceneChanged(Scene prev, Scene next)
         {
-            var userInfo = await BS_Utils.Gameplay.GetUserInfo.GetUserAsync();
-            UserID = userInfo.platformUserId;
+            if (next.name == "MainMenu")
+            {
+                SceneManager.activeSceneChanged -= OnActiveSceneChanged;
+                async void showUI()
+                {
+                    await Task.Delay(3000);
+                    MultiplayerPlusHarmony.OnJoinLoby?.Invoke();
+                }
+                showUI();
+            }
         }
 
         [OnExit]

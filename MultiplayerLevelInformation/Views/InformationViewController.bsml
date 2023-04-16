@@ -1,0 +1,158 @@
+﻿<bg bg='round-rect-panel' bg-color='#ffffff80'>
+	<vertical>
+		<horizontal pad-top='1' horizontal-fit='PreferredSize'>
+			<horizontal>
+				<text text='Selected by' font-size='3.0'></text>
+			</horizontal>
+			<horizontal pad-left='1'>
+				<clickable-text id='own-button' on-click='ChangeSelectedByOwn' text='OWN' font-size='3.5' underlined='true'></clickable-text>
+			</horizontal>
+			<horizontal pad-left='1'>
+				<clickable-text id='host-button' on-click='ChangeSelectedByHost' text='HOST' font-size='3.5' underlined='true'></clickable-text>
+			</horizontal>
+		</horizontal>
+
+		<horizontal min-width='80' pad-top='1'>
+			<horizontal min-width='10'>
+				<text font-size='3.0' text='Status'></text>
+			</horizontal>
+			<horizontal min-width='70' preferred-width='70'>
+				<text id='status-text' overflow-mode='Ellipsis' word-wrapping='false' font-size='3.0' text='Not Selected.'></text>
+			</horizontal>
+		</horizontal>
+
+		<horizontal min-width='80' pad-top='3'  preferred-height='12'>
+			<horizontal>
+				<image id='cover-image' source='MultiplayerLevelInformation.Images._404.png' preferred-width='6' preferred-height='10'></image>
+			</horizontal>
+			<vertical>
+				<horizontal min-width='65' preferred-width='65'>
+					<horizontal min-width='65' preferred-width='65'>
+						<text id='song-text' overflow-mode='Ellipsis' word-wrapping='false' font-size='3.0' text='-' color='#ffffff'></text>
+					</horizontal>
+				</horizontal>
+				<horizontal min-width='65' preferred-width='65'>
+					<horizontal min-width='65' preferred-width='65'>
+						<text id='mapper-text' overflow-mode='Ellipsis' word-wrapping='false' font-size='3.0' text='-' color='#aaaaaa'></text>
+					</horizontal>
+				</horizontal>
+				<horizontal min-width='65' preferred-width='65'>
+					<horizontal min-width='65' preferred-width='65'>
+						<text id='mode-difficulty-text' font-size='3.0' text='-' color='#aaaaaa'></text>
+					</horizontal>
+				</horizontal>
+			</vertical>
+		</horizontal>
+
+		<horizontal min-width='80' pad-top='3'>
+			<horizontal min-width='10' preferred-width='10'>
+				<text font-size='3.0' text='Key'></text>
+			</horizontal>
+			<horizontal min-width='10' preferred-width='10'>
+				<text id='key-text' font-size='3.0' text='-' color='#aaaaaa'></text>
+			</horizontal>
+			<horizontal min-width='10' preferred-width='10'>
+				<text font-size='3.0' text='HASH'></text>
+			</horizontal>
+			<horizontal min-width='50' preferred-width='50'>
+				<text id='hash-text' font-size='3.0' text='-' color='#aaaaaa'></text>
+			</horizontal>
+		</horizontal>
+
+		<horizontal min-width='80'>
+			<horizontal min-width='10'>
+				<text font-size='3.0' text='BPM'></text>
+			</horizontal>
+			<horizontal min-width='10'>
+				<text id='bpm-text' font-size='3.0' text='-' color='#aaaaaa'></text>
+			</horizontal>
+			<horizontal min-width='10'>
+				<text font-size='2.7' text='DURATION'></text>
+			</horizontal>
+			<horizontal min-width='10'>
+				<text id='duration-text' font-size='3.0' text='-' color='#aaaaaa'></text>
+			</horizontal>
+			<horizontal min-width='10'>
+				<text font-size='3.0' text='★'></text>
+			</horizontal>
+			<horizontal min-width='10'>
+				<text id='star-text' font-size='3.0' text='-' color='#aaaaaa'></text>
+			</horizontal>
+			<horizontal min-width='10'>
+				<text font-size='3.0' text=''></text>
+			</horizontal>
+			<horizontal min-width='10'>
+				<text font-size='3.0' text='' color='#aaaaaa'></text>
+			</horizontal>
+		</horizontal>
+
+		<horizontal min-width='80'>
+			<horizontal min-width='10'>
+				<text font-size='3.0' text='NPS'></text>
+			</horizontal>
+			<horizontal min-width='10'>
+				<text id='nps-text' font-size='3.0' text='-' color='#aaaaaa'></text>
+			</horizontal>
+			<horizontal min-width='10'>
+				<text font-size='3.0' text='NOTE'></text>
+			</horizontal>
+			<horizontal min-width='10'>
+				<text id='note-text' font-size='3.0' text='-' color='#aaaaaa'></text>
+			</horizontal>
+			<horizontal min-width='10'>
+				<text font-size='3.0' text='WALL'></text>
+			</horizontal>
+			<horizontal min-width='10' preferred-width='10'>
+				<text id='wall-text' overflow-mode='Ellipsis' word-wrapping='false' font-size='3.0' text='-' color='#aaaaaa'></text>
+			</horizontal>
+			<horizontal min-width='10'>
+				<text font-size='3.0' text='BOMB'></text>
+			</horizontal>
+			<horizontal min-width='10'>
+				<text id='bomb-text' font-size='3.0' text='-' color='#aaaaaa'></text>
+			</horizontal>
+		</horizontal>
+
+		<horizontal min-width='80'>
+			<horizontal min-width='10'>
+				<text font-size='3.0' text='NJS'></text>
+			</horizontal>
+			<horizontal min-width='10'>
+				<text id='njs-text' font-size='3.0' text='-' color='#aaaaaa'></text>
+			</horizontal>
+			<horizontal min-width='10'>
+				<text font-size='3.0' text='JD'></text>
+			</horizontal>
+			<horizontal min-width='10'>
+				<text id='jd-text' font-size='3.0' text='-' color='#aaaaaa'></text>
+			</horizontal>
+			<horizontal min-width='10'>
+				<text font-size='3.0' text='OFFSET'></text>
+			</horizontal>
+			<horizontal min-width='10'>
+				<text id='offset-text' font-size='3.0' text='-' color='#aaaaaa'></text>
+			</horizontal>
+			<horizontal min-width='10'>
+				<text font-size='3.0' text='RT'></text>
+			</horizontal>
+			<horizontal min-width='10'>
+				<text id='rt-text' font-size='3.0' text='-' color='#aaaaaa'></text>
+			</horizontal>
+		</horizontal>
+
+		<horizontal pad-top='2' min-height='7' horizontal-fit='PreferredSize'>
+			<image id='move-arrow-image' source='MultiplayerLevelInformation.Images.move_arrow.png' image-color='#808080' preferred-width='4.5' preferred-height='4.5'></image>
+			<horizontal min-width='10'>
+			</horizontal>
+			<clickable-image on-click="JumpToSelectedSong" source='MultiplayerLevelInformation.Images.go_to_song.png' preferred-width='5' preferred-height='5'></clickable-image>
+			<horizontal min-width='10'>
+			</horizontal>
+			<clickable-image on-click="JumpToLastPlayedSong" source='MultiplayerLevelInformation.Images.go_to_song_last.png' preferred-width='5' preferred-height='5'></clickable-image>
+			<horizontal min-width='10'>
+			</horizontal>
+			<clickable-image on-click="OpenBeatServerURL" source='MultiplayerLevelInformation.Images.BeatSaverLogo.png' preferred-width='5' preferred-height='5'></clickable-image>
+		</horizontal>
+		<horizontal pad-top='1'>
+		</horizontal>
+	</vertical>
+</bg>

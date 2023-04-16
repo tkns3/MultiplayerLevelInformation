@@ -1,11 +1,14 @@
-﻿using HMUI;
-using MultiplayerLevelInformation.Configuration;
+﻿using BeatSaberMarkupLanguage;
+using BeatSaberMarkupLanguage.FloatingScreen;
+using MultiplayerLevelInformation.HarmonyPatches;
 using MultiplayerLevelInformation.Utils;
+using MultiplayerLevelInformation.Views;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 
 namespace MultiplayerLevelInformation
 {
@@ -15,219 +18,65 @@ namespace MultiplayerLevelInformation
     /// </summary>
     public class MultiplayerLevelInformationController : MonoBehaviour
     {
-        public static MultiplayerLevelInformationController Instance { get; private set; }
+        private GameObject m_RootGameObject = null;
+        private FloatingScreen m_FloatingScreen = null;
+        private InformationViewController m_ViewController = null;
+        private Material m_FloatingScreenHandleMaterial = null;
 
-        private static Dictionary<string, APIs.BeatSaver.MapDetail> _mapDetailCaches = new Dictionary<string, APIs.BeatSaver.MapDetail>();
+        private Vector3 m_MPScreenPositionDefault = new Vector3(0.0f, 0.1f, 1.6f);
+        private Vector3 m_MPScreenPositionLast = new Vector3(0.0f, 0.1f, 1.6f);
+        private Quaternion m_MPScreenRotationDefault = Quaternion.Euler(90, 0, 0);
+        private Quaternion m_MPScreenRotationLast = Quaternion.Euler(90, 0, 0);
 
-        private static string _lastText = "";
+        private Vector3 m_BTScreenPositionDefault = new Vector3(0.0f, 0.1f, 1.25f);
+        private Vector3 m_BTScreenPositionLast = new Vector3(0.0f, 0.1f, 1.25f);
+        private Quaternion m_BTScreenRotationDefault = Quaternion.Euler(90, 0, 0);
+        private Quaternion m_BTScreenRotationLast = Quaternion.Euler(90, 0, 0);
 
-        // These methods are automatically called by Unity, you should remove any you aren't using.
+        private static Dictionary<string, APIs.BeatSaver.MapDetail> m_mapDetailCaches = new Dictionary<string, APIs.BeatSaver.MapDetail>();
+        private static Dictionary<string, LevelOverview> m_lastSelectedLevel = new Dictionary<string, LevelOverview>();
+
+        private static MultiMode m_multiMode = MultiMode.None;
+        private static SelectedByTarget m_selectedByTarget = SelectedByTarget.Own;
+        private string m_ownUserID = "";
+        private string m_hostUserID = "";
+        private bool m_handleGrabbing = false;
+        private bool m_handleEntering = false;
+
+        private string TargetUserID
+        {
+            get
+            {
+                return (m_selectedByTarget == SelectedByTarget.Own) ? m_ownUserID : m_hostUserID;
+            }
+        }
+
         #region Monobehaviour Messages
         /// <summary>
         /// Only ever called once, mainly used to initialize variables.
         /// </summary>
         private void Awake()
         {
-            // For this particular MonoBehaviour, we only want one instance to exist at any time, so store a reference to it in a static property
-            //   and destroy any that are created while one already exists.
-            if (Instance != null)
-            {
-                Plugin.Log?.Warn($"Instance of {GetType().Name} already exists, destroying.");
-                GameObject.DestroyImmediate(this);
-                return;
-            }
             GameObject.DontDestroyOnLoad(this); // Don't destroy this object on scene changes
-            Instance = this;
-            Plugin.Log?.Debug($"{name}: Awake()");
+            Plugin.Log.Debug($"{name}: Awake()");
         }
+
         /// <summary>
         /// Only ever called once on the first frame the script is Enabled. Start is called after any other script's Awake() and before Update().
         /// </summary>
         private void Start()
         {
-            gameObject.AddComponent<Canvas>();
-            CurvedTextMeshPro textMesh = new GameObject("Text").AddComponent<CurvedTextMeshPro>();
-            textMesh.transform.SetParent(transform);
-            textMesh.alignment = TextAlignmentOptions.Center;
-            textMesh.transform.eulerAngles = new Vector3(PluginConfig.Instance.EulerAnglesX, PluginConfig.Instance.EulerAnglesY, PluginConfig.Instance.EulerAnglesZ);
-            textMesh.transform.position = new Vector3(PluginConfig.Instance.PositionX, PluginConfig.Instance.PositionY, PluginConfig.Instance.PositionZ);
-            textMesh.color = Color.white;
-            textMesh.fontSize = 0.05f;
-            textMesh.text = "";
-        }
+            MultiplayerPlusHarmony.OnJoinLoby += OnMultiplayerPlusJoinLoby;
+            MultiplayerPlusHarmony.OnLeaveLoby += OnMultiplayerPlusLeaveLoby;
+            MultiplayerPlusHarmony.OnOwnUserIDNotify += OnOwnUserIDNotify;
+            MultiplayerPlusHarmony.OnHostChanged += OnHostChanged;
+            MultiplayerPlusHarmony.OnPlayerSelectedLevelChanged += OnPlayerSelectedLevelChanged;
 
-        /// <summary>
-        /// Called every frame if the script is enabled.
-        /// </summary>
-        private void Update()
-        {
-            
-        }
-
-        public void ShowBeatmapInformation()
-        {
-            Plugin.Log.Info($"ShowBeatmapInformation");
-            CurvedTextMeshPro textMesh = gameObject.GetComponentInChildren<CurvedTextMeshPro>();
-            textMesh.text = _lastText;
-        }
-
-        public void HideBeatmapInformation()
-        {
-            Plugin.Log.Info($"HideBeatmapInformation");
-            CurvedTextMeshPro textMesh = gameObject.GetComponentInChildren<CurvedTextMeshPro>();
-            textMesh.text = "";
-        }
-
-        public void ShowBeatmapInformation(PreviewDifficultyBeatmap beatmap)
-        {
-            ShowBeatmapInformation(beatmap.beatmapLevel.levelID, beatmap.beatmapDifficulty, beatmap.beatmapCharacteristic.serializedName);
-        }
-
-        public void ShowBeatmapInformation(string levelID, BeatmapDifficulty difficulty, string mode)
-        {
-            Plugin.Log.Info($"ShowBeatmapInformation {levelID}");
-
-            CurvedTextMeshPro textMesh = gameObject.GetComponentInChildren<CurvedTextMeshPro>();
-            if (textMesh == null)
-            {
-                return;
-            }
-
-            if (levelID.Length != 53)
-            {
-                textMesh.text = $"{levelID} is not custom level.";
-                Plugin.Log.Info(textMesh.text);
-                return;
-            }
-
-            string hash = levelID.Substring(13);
-
-            if (_mapDetailCaches.TryGetValue(hash, out var _map))
-            {
-                textMesh.text = _lastText = LevelInformationText(hash, _map, difficulty, mode);
-                _lastText = textMesh.text;
-                Plugin.Log.Info(textMesh.text);
-            }
-            else
-            {
-                async void wrapper()
-                {
-                    try
-                    {
-                        textMesh.text = $"Downloading Map Information from Beat Saver...";
-                        var map = await APIs.BeatSaver.GetMapDetail(hash);
-                        if (map != null)
-                        {
-                            if (!_mapDetailCaches.ContainsKey(hash))
-                            {
-                                _mapDetailCaches.Add(hash, map);
-                            }
-                            textMesh.text = LevelInformationText(hash, map, difficulty, mode);
-                        }
-                        else
-                        {
-                            textMesh.text = $"Selected HASH=[{hash}]\nFailed to get map data from Beat Server.";
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        textMesh.text = $"Selected HASH=[{hash}]\n{e.Message}";
-                    }
-                    _lastText = textMesh.text;
-                    Plugin.Log.Info(textMesh.text);
-                }
-                wrapper();
-            }
-        }
-
-        static string LevelInformationText(string hash, APIs.BeatSaver.MapDetail map, BeatmapDifficulty difficulty, string mode)
-        {
-            Plugin.Log.Info($"LevelInformationText {hash}, {difficulty}, {mode}");
-            if (map.versions == null)
-            {
-                return $"Selected HASH=[{hash}]\nmap.versions == null";
-            }
-            if (map.versions.Length == 0)
-            {
-                return $"Selected HASH=[{hash}]\nmap.versions.Length == 0";
-            }
-            if (map.versions[0].diffs == null)
-            {
-                return $"Selected HASH=[{hash}]\nmap.versions[0].diffs == null";
-            }
-            if (map.id == null)
-            {
-                return $"Selected HASH=[{hash}]\nmap.id == null";
-            }
-            if (map.metadata == null)
-            {
-                return $"Selected HASH=[{hash}]\nmap.metadata == null";
-            }
-            if (map.metadata.levelAuthorName == null)
-            {
-                return $"Selected HASH=[{hash}]\nmap.metadata.levelAuthorName == null";
-            }
-            if (!map.versions[0].hash.ToLower().Equals(hash.ToLower()))
-            {
-                return $"Selected HASH=[{hash}]\nLatest HASH=[{map.versions[0].hash}]\nKey=[{map.id}] Mapper=[{map.metadata.levelAuthorName}]\nThis Map is Re-Pubslished !!!";
-            }
-            try
-            {
-                var diff = map.versions[0].diffs.Single(d => d.difficulty != null && d.difficulty.Equals(difficulty.ToString()) && d.characteristic != null && d.characteristic.Equals(mode));
-                var key = map.id;
-                var mapper = map.metadata.levelAuthorName;
-                var duration = map.metadata.duration;
-                var bpm = map.metadata.bpm;
-                var nps = diff.nps;
-                var notes = diff.notes;
-                var ob = diff.obstacles;
-                var bombs = diff.bombs;
-                var offset = diff.offset;
-                var njs = diff.njs;
-                var jd = (bpm > 0) ? BeatmapUtils.GetJd(bpm, njs, offset) : 0;
-                var rt = (bpm > 0 && njs > 0) ? BeatmapUtils.GetRT(bpm, njs, offset) * 1000 : 0;
-                string s = $"HASH=[{hash}]\nKey=[{key}] Mapper=[{mapper}]\n";
-                s += $"DURATION=[{(int)duration / 60}:{(int)duration % 60:00}] BPM=[{bpm}]\n";
-                s += $"NPS=[{nps:#.##}] NOTE=[{notes}] OB=[{ob}] BOMB=[{bombs}]\n";
-                s += $"NJS=[{njs}] JD=[{jd:#.##}] OFFSET=[{offset}] RT=[{rt:#.##}]";
-                return s;
-            }
-            catch (Exception)
-            {
-                return $"Selected HASH=[{hash}]\nLatest HASH=[{map.versions[0].hash}]\nKey=[{map.id}] Mapper=[{map.metadata.levelAuthorName}]\nThis Map is Re-Pubslished !!!";
-            }
-        }
-
-        public void ConfigChanged()
-        {
-            Plugin.Log.Info("ConfigChanged");
-            CurvedTextMeshPro textMesh = gameObject.GetComponentInChildren<CurvedTextMeshPro>();
-            textMesh.transform.eulerAngles = new Vector3(PluginConfig.Instance.EulerAnglesX, PluginConfig.Instance.EulerAnglesY, PluginConfig.Instance.EulerAnglesZ);
-            textMesh.transform.position = new Vector3(PluginConfig.Instance.PositionX, PluginConfig.Instance.PositionY, PluginConfig.Instance.PositionZ);
-        }
-
-        /// <summary>
-        /// Called every frame after every other enabled script's Update().
-        /// </summary>
-        private void LateUpdate()
-        {
-
-        }
-
-        /// <summary>
-        /// Called when the script becomes enabled and active
-        /// </summary>
-        private void OnEnable()
-        {
-
-        }
-
-        /// <summary>
-        /// Called when the script becomes disabled or when it is being destroyed.
-        /// </summary>
-        private void OnDisable()
-        {
-
+            BeatTogetherHarmony.OnJoinLoby += OnBeatTogetherJoinLoby;
+            BeatTogetherHarmony.OnLeaveLoby += OnBeatTogetherLeaveLoby;
+            BeatTogetherHarmony.OnOwnUserIDNotify += OnOwnUserIDNotify;
+            BeatTogetherHarmony.OnHostChanged += OnHostChanged;
+            BeatTogetherHarmony.OnPlayerSelectedLevelChanged += OnPlayerSelectedLevelChanged;
         }
 
         /// <summary>
@@ -235,11 +84,652 @@ namespace MultiplayerLevelInformation
         /// </summary>
         private void OnDestroy()
         {
-            Plugin.Log?.Debug($"{name}: OnDestroy()");
-            if (Instance == this)
-                Instance = null; // This MonoBehaviour is being destroyed, so set the static instance property to null.
+            Plugin.Log.Debug($"{name}: OnDestroy()");
 
+            MultiplayerPlusHarmony.OnJoinLoby -= OnMultiplayerPlusJoinLoby;
+            MultiplayerPlusHarmony.OnLeaveLoby -= OnMultiplayerPlusLeaveLoby;
+            MultiplayerPlusHarmony.OnOwnUserIDNotify -= OnOwnUserIDNotify;
+            MultiplayerPlusHarmony.OnHostChanged -= OnHostChanged;
+            MultiplayerPlusHarmony.OnPlayerSelectedLevelChanged -= OnPlayerSelectedLevelChanged;
+
+            BeatTogetherHarmony.OnJoinLoby -= OnBeatTogetherJoinLoby;
+            BeatTogetherHarmony.OnLeaveLoby -= OnBeatTogetherLeaveLoby;
+            BeatTogetherHarmony.OnOwnUserIDNotify -= OnOwnUserIDNotify;
+            BeatTogetherHarmony.OnHostChanged -= OnHostChanged;
+            BeatTogetherHarmony.OnPlayerSelectedLevelChanged -= OnPlayerSelectedLevelChanged;
+
+            SceneManager.activeSceneChanged -= OnActiveSceneChanged;
+
+            CleanupView();
         }
         #endregion
+
+        private void SetupView(MultiMode multiMode)
+        {
+            CleanupView();
+
+            if (m_RootGameObject == null)
+            {
+                m_RootGameObject = new GameObject("MultiplayerLevelInformation.FloatingScreen_Root");
+                GameObject.DontDestroyOnLoad(m_RootGameObject);
+
+                m_FloatingScreenHandleMaterial = GameObject.Instantiate(UINoGlowMaterial);
+                m_FloatingScreenHandleMaterial.color = Color.clear;
+
+                m_ViewController = BeatSaberUI.CreateViewController<InformationViewController>();
+
+                m_FloatingScreen = FloatingScreen.CreateFloatingScreen(new Vector2(85, 40), true, Vector3.zero, Quaternion.identity);
+                m_FloatingScreen.SetRootViewController(m_ViewController, HMUI.ViewController.AnimationType.None);
+                m_FloatingScreen.transform.SetParent(m_RootGameObject.transform);
+                m_FloatingScreen.gameObject.name = "MultiplayerLevelInformation.FloatingScreen";
+                m_FloatingScreen.HandleSide = FloatingScreen.Side.Bottom;
+                m_FloatingScreen.handle.transform.localScale = Vector3.one * 5.0f;
+                m_FloatingScreen.handle.transform.localPosition = new Vector3(-7.6f * 3, -16.8f, 0.0f);
+                m_FloatingScreen.handle.gameObject.GetComponent<Renderer>().material = m_FloatingScreenHandleMaterial;
+                m_FloatingScreen.HandleGrabbed += OnHandleGrabbed;
+                m_FloatingScreen.HandleReleased += OnHandleReleased;
+                m_FloatingScreen.transform.localScale = Vector3.one * 0.02f;
+                m_FloatingScreen.transform.localPosition = (multiMode == MultiMode.MultiplayerPlus) ? m_MPScreenPositionLast : m_BTScreenPositionLast;
+                m_FloatingScreen.transform.localRotation = (multiMode == MultiMode.MultiplayerPlus) ? m_MPScreenRotationLast : m_BTScreenRotationLast;
+
+                var pointerHandler = m_FloatingScreen.handle.AddComponent<PointerHandler>();
+                pointerHandler.OnPointerEnter1 += OnHandlePointerEnter;
+                pointerHandler.OnPointerExit1 += OnHandlePointerExit;
+
+                m_ViewController.transform.localScale = Vector3.one;
+                m_ViewController.transform.localEulerAngles = Vector3.zero;
+                m_ViewController.OnSelectedByChanged += OnSelectedByChanged;
+            }
+            else
+            {
+                m_FloatingScreen.transform.localPosition = (multiMode == MultiMode.MultiplayerPlus) ? m_MPScreenPositionLast : m_BTScreenPositionLast;
+                m_FloatingScreen.transform.localRotation = (multiMode == MultiMode.MultiplayerPlus) ? m_MPScreenRotationLast : m_BTScreenRotationLast;
+            }
+        }
+
+        private void OnHandleReleased(object sender, FloatingScreenHandleEventArgs args)
+        {
+            m_handleGrabbing = false;
+
+            if (m_FloatingScreen.transform.localPosition.y < 0f)
+            {
+                // 床の下で離した場合は位置リセット
+                m_FloatingScreen.transform.localPosition = (m_multiMode == MultiMode.MultiplayerPlus) ? m_MPScreenPositionDefault : m_BTScreenPositionDefault;
+                m_FloatingScreen.transform.localRotation = (m_multiMode == MultiMode.MultiplayerPlus) ? m_MPScreenRotationDefault : m_BTScreenRotationDefault;
+            }
+
+            if (m_multiMode == MultiMode.MultiplayerPlus)
+            {
+                m_MPScreenPositionLast = m_FloatingScreen.transform.localPosition;
+                m_MPScreenRotationLast = m_FloatingScreen.transform.localRotation;
+            }
+            else
+            {
+                m_BTScreenPositionLast = m_FloatingScreen.transform.localPosition;
+                m_BTScreenRotationLast = m_FloatingScreen.transform.localRotation;
+            }
+
+            m_ViewController.SetMoveArrowColor(m_handleEntering ? Color.white : Color.gray);
+        }
+
+        private void OnHandleGrabbed(object sender, FloatingScreenHandleEventArgs args)
+        {
+            m_handleGrabbing = true;
+            m_ViewController.SetMoveArrowColor(Color.green);
+        }
+
+        public class PointerHandler : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+        {
+            public Action OnPointerEnter1;
+            public Action OnPointerExit1;
+
+            public void OnPointerEnter(PointerEventData eventData)
+            {
+                OnPointerEnter1?.Invoke();
+            }
+
+            public void OnPointerExit(PointerEventData eventData)
+            {
+                OnPointerExit1?.Invoke();
+            }
+        }
+
+        private void OnHandlePointerEnter()
+        {
+            m_handleEntering = true;
+            if (!m_handleGrabbing)
+            {
+                m_ViewController.SetMoveArrowColor(Color.white);
+            }
+        }
+
+        private void OnHandlePointerExit()
+        {
+            m_handleEntering = false;
+            if (!m_handleGrabbing)
+            {
+                m_ViewController.SetMoveArrowColor(Color.gray);
+            }
+        }
+
+        private void CleanupView()
+        {
+            if (m_RootGameObject != null)
+            {
+                m_FloatingScreen.SetRootViewController(null, HMUI.ViewController.AnimationType.None);
+                m_ViewController.OnSelectedByChanged -= OnSelectedByChanged;
+                GameObject.Destroy(m_ViewController);
+                GameObject.Destroy(m_FloatingScreen);
+                GameObject.Destroy(m_RootGameObject);
+                m_ViewController = null;
+                m_FloatingScreen = null;
+                m_RootGameObject = null;
+            }
+        }
+
+        private void ChangeViewParameter(LevelOverview selectedLevel)
+        {
+            async void wrapper()
+            {
+                var mapType = selectedLevel.GetMapType();
+                if (mapType == LevelOverview.MapType.NotSelect)
+                {
+                    m_ViewController.SetNotSelected();
+                }
+                else if (mapType == LevelOverview.MapType.Official)
+                {
+                    m_ViewController.SetNotSupportOfficial(selectedLevel);
+                }
+                else
+                {
+                    try
+                    {
+                        APIs.BeatSaver.MapDetail map;
+                        if (!m_mapDetailCaches.TryGetValue(selectedLevel.hash, out map))
+                        {
+                            m_ViewController.SetDownloading(selectedLevel);
+                            map = await APIs.BeatSaver.GetMapDetail(selectedLevel.hash);
+                        }
+
+                        var levelDetail = new LevelDetail().Assign(selectedLevel, map);
+                        _ = m_mapDetailCaches.TryAdd(selectedLevel.hash, map);
+                        m_ViewController.SetDownloaded(selectedLevel, levelDetail);
+                    }
+                    catch (Exception e)
+                    {
+                        m_ViewController.SetFailed(selectedLevel, e.Message);
+                    }
+                }
+            }
+            wrapper();
+        }
+
+        private LevelOverview GetLastSelectedLevel(string userID)
+        {
+            if (!m_lastSelectedLevel.ContainsKey(userID))
+            {
+                m_lastSelectedLevel.Add(userID, new LevelOverview());
+            }
+            return m_lastSelectedLevel[userID];
+        }
+
+        private void SetLastSelectedLevel(string userID, LevelOverview level)
+        {
+            m_lastSelectedLevel[userID] = level;
+        }
+
+        private void OnActiveSceneChanged(Scene prevScene, Scene nextScene)
+        {
+            Plugin.Log.Debug($"prev={prevScene.name}, naxt={nextScene.name}");
+            switch (nextScene.name)
+            {
+                case "MainMenu":
+                    OnMainMenuSceneActive(prevScene);
+                    break;
+                default:
+                    m_FloatingScreen.gameObject.SetActive(false);
+                    // MP+で投票がONになっている場合、プレイする譜面はホスト選択じゃない可能性あるけど実装面倒なのでさぼる
+                    m_ViewController.LastPlayedLevelHash = GetLastSelectedLevel(m_hostUserID).hash;
+                    break;
+            }
+        }
+
+        private void OnMainMenuSceneActive(Scene prevScene)
+        {
+            switch (m_multiMode)
+            {
+                case MultiMode.None:
+                    // do nothing
+                    break;
+                case MultiMode.BeatTogether:
+                    m_lastSelectedLevel.Clear();
+                    m_ViewController.SetNotSelected();
+                    m_FloatingScreen.gameObject.SetActive(true);
+                    break;
+                case MultiMode.MultiplayerPlus:
+                    m_FloatingScreen.gameObject.SetActive(true);
+                    break;
+            }
+        }
+
+        private void OnSelectedByChanged(SelectedByTarget target)
+        {
+            Plugin.Log.Debug($"OnSelectedByChanged: {target}");
+
+            if (target == SelectedByTarget.Own)
+            {
+
+            }
+            m_selectedByTarget = target;
+            var lastSelectedLevel = GetLastSelectedLevel(TargetUserID);
+            ChangeViewParameter(lastSelectedLevel);
+        }
+
+        private void OnBeatTogetherJoinLoby()
+        {
+            Plugin.Log.Debug($"OnBeatTogetherJoinLoby: preMode={m_multiMode}");
+
+            if (m_multiMode == MultiMode.MultiplayerPlus)
+            {
+                OnMultiplayerPlusLeaveLoby();
+            }
+
+            if (m_multiMode != MultiMode.BeatTogether)
+            {
+                SetupView(MultiMode.BeatTogether);
+                SceneManager.activeSceneChanged += OnActiveSceneChanged;
+                m_lastSelectedLevel.Clear();
+                m_selectedByTarget = SelectedByTarget.Own;
+                m_ownUserID = "";
+                m_hostUserID = "";
+                m_ViewController.SetTargetSelectMode(enableTargetSelect: true, ownSelected: true);
+                m_ViewController.SetNotSelected();
+                m_FloatingScreen.gameObject.SetActive(true);
+
+                m_multiMode = MultiMode.BeatTogether;
+            }
+        }
+
+        private void OnBeatTogetherLeaveLoby()
+        {
+            Plugin.Log.Debug($"OnBeatTogetherLeaveLoby: preMode={m_multiMode}");
+
+            if (m_multiMode != MultiMode.None)
+            {
+                SceneManager.activeSceneChanged -= OnActiveSceneChanged;
+                m_lastSelectedLevel.Clear();
+                m_ownUserID = "";
+                m_hostUserID = "";
+                m_FloatingScreen.gameObject.SetActive(false);
+
+                m_multiMode = MultiMode.None;
+
+                CleanupView();
+            }
+        }
+
+        private void OnMultiplayerPlusJoinLoby()
+        {
+            Plugin.Log.Debug($"OnMultiplayerPlusJoinLoby: preMode={m_multiMode}");
+
+            if (m_multiMode == MultiMode.BeatTogether)
+            {
+                OnBeatTogetherLeaveLoby();
+            }
+
+            if (m_multiMode != MultiMode.MultiplayerPlus)
+            {
+                SetupView(MultiMode.MultiplayerPlus);
+                SceneManager.activeSceneChanged += OnActiveSceneChanged;
+                m_lastSelectedLevel.Clear();
+                m_selectedByTarget = SelectedByTarget.Own;
+                m_ownUserID = "";
+                m_hostUserID = "";
+                m_ViewController.SetTargetSelectMode(enableTargetSelect: true, ownSelected: true);
+                m_ViewController.SetNotSelected();
+                m_FloatingScreen.gameObject.SetActive(true);
+
+                m_multiMode = MultiMode.MultiplayerPlus;
+            }
+        }
+
+        private void OnMultiplayerPlusLeaveLoby()
+        {
+            Plugin.Log.Debug($"OnMultiplayerPlusLeaveLoby: preMode={m_multiMode}");
+
+            if (m_multiMode != MultiMode.None)
+            {
+                SceneManager.activeSceneChanged -= OnActiveSceneChanged;
+                m_lastSelectedLevel.Clear();
+                m_ownUserID = "";
+                m_hostUserID = "";
+                m_FloatingScreen.gameObject.SetActive(false);
+
+                m_multiMode = MultiMode.None;
+
+                CleanupView();
+            }
+        }
+
+        private void OnPlayerSelectedLevelChanged(string userID, LevelOverview level)
+        {
+            Plugin.Log.Debug($"OnPlayerSelectedLevelChanged: {userID}, {level.levelID}, {level.difficulty}, {level.mode}");
+
+            var lastLevel = GetLastSelectedLevel(userID);
+            if (lastLevel == level)
+            {
+                return;
+            }
+
+            SetLastSelectedLevel(userID, level);
+
+            if (userID == TargetUserID)
+            {
+                ChangeViewParameter(level);
+            }
+        }
+
+        private void OnOwnUserIDNotify(string nextUserID)
+        {
+            Plugin.Log.Debug($"OnOwnUserIDNotify: pre={m_ownUserID}, next={nextUserID}");
+
+            if (m_ownUserID == nextUserID) return;
+
+            m_ownUserID = nextUserID;
+
+            if (m_selectedByTarget == SelectedByTarget.Own)
+            {
+                var lastSelectedLevel = GetLastSelectedLevel(TargetUserID);
+                ChangeViewParameter(lastSelectedLevel);
+            }
+        }
+
+        private void OnHostChanged(string nextHostUserID)
+        {
+            Plugin.Log.Debug($"OnHostChanged: pre={m_hostUserID}, next={nextHostUserID}");
+
+            if (m_hostUserID == nextHostUserID) return;
+
+            m_hostUserID = nextHostUserID;
+
+            if (m_selectedByTarget == SelectedByTarget.Host)
+            {
+                var lastSelectedLevel = GetLastSelectedLevel(TargetUserID);
+                ChangeViewParameter(lastSelectedLevel);
+            }
+        }
+
+        private static UnityEngine.Material m_UINoGlowMaterial;
+        private static UnityEngine.Material UINoGlowMaterial
+        {
+            get
+            {
+                if (m_UINoGlowMaterial == null)
+                {
+                    m_UINoGlowMaterial = UnityEngine.Resources.FindObjectsOfTypeAll<UnityEngine.Material>().Where(x => x.name == "UINoGlow").FirstOrDefault();
+
+                    if (m_UINoGlowMaterial != null)
+                        m_UINoGlowMaterial = UnityEngine.Material.Instantiate(m_UINoGlowMaterial);
+                }
+
+                return m_UINoGlowMaterial;
+            }
+        }
+    }
+
+    public class LevelDetail
+    {
+        public string levelID;
+
+        public string hash;
+
+        public string imageUrl;
+
+        public BeatmapDifficulty difficulty;
+
+        public string difficultyLabel;
+
+        public string mode;
+
+        public string key;
+
+        public string songName;
+
+        public string songSubName;
+
+        public string songAuthorName;
+
+        public string songFullName;
+
+        public string mapperName;
+
+        public int duration;
+
+        public double bpm;
+
+        public double nps;
+
+        public int notes;
+
+        public int ob;
+
+        public int bombs;
+
+        public double offset;
+
+        public double njs;
+
+        public double jd;
+
+        public double rt;
+
+        public double star;
+
+        public int parityErrors;
+
+        public int parityWarns;
+
+        public int parityResets;
+
+        public LevelDetail Assign(LevelOverview level, APIs.BeatSaver.MapDetail map)
+        {
+            if (map == null)
+            {
+                Plugin.Log.Debug("BeatSaver.MapDetail is invalid. map == null");
+                throw new Exception($"Failed to get map data from Beat Server.");
+            }
+            if (map.versions == null)
+            {
+                Plugin.Log.Debug("BeatSaver.MapDetail is invalid. map.versions == null");
+                throw new Exception($"Failed to get map data from Beat Server.");
+            }
+            if (map.versions.Length == 0)
+            {
+                Plugin.Log.Debug("BeatSaver.MapDetail is invalid. map.versions.Length == 0");
+                throw new Exception($"Failed to get map data from Beat Server.");
+            }
+            if (map.versions[0].diffs == null)
+            {
+                Plugin.Log.Debug("BeatSaver.MapDetail is invalid. map.versions[0].diffs == null");
+                throw new Exception($"Failed to get map data from Beat Server.");
+            }
+            if (map.id == null)
+            {
+                Plugin.Log.Debug("BeatSaver.MapDetail is invalid. map.id == null");
+                throw new Exception($"Failed to get map data from Beat Server.");
+            }
+            if (map.metadata == null)
+            {
+                Plugin.Log.Debug("BeatSaver.MapDetail is invalid. map.metadata == null");
+                throw new Exception($"Failed to get map data from Beat Server.");
+            }
+            if (map.metadata.levelAuthorName == null)
+            {
+                Plugin.Log.Debug("BeatSaver.MapDetail is invalid. map.metadata.levelAuthorName == null");
+                throw new Exception($"Failed to get map data from Beat Server.");
+            }
+            try
+            {
+                var diff = map.versions[0].diffs.Single(d => d.difficulty == level.difficulty.ToString() && d.characteristic == level.mode);
+                levelID = level.levelID;
+                hash = map.versions[0].hash.ToUpper();
+                imageUrl = map.versions[0].coverURL;
+                difficulty = level.difficulty;
+                difficultyLabel = diff.label;
+                mode = level.mode;
+                key = map.id;
+                songName = map.metadata.songName;
+                songSubName = map.metadata.songSubName;
+                songAuthorName = map.metadata.songAuthorName;
+                songFullName = $"{songName} {songSubName} / {songAuthorName}";
+                mapperName = map.metadata.levelAuthorName;
+                duration = map.metadata.duration;
+                bpm = map.metadata.bpm;
+                nps = diff.nps;
+                notes = diff.notes;
+                ob = diff.obstacles;
+                bombs = diff.bombs;
+                offset = diff.offset;
+                njs = diff.njs;
+                jd = (bpm > 0) ? BeatmapUtils.GetJd(bpm, njs, offset) : 0;
+                rt = (bpm > 0 && njs > 0) ? BeatmapUtils.GetRT(bpm, njs, offset) * 1000 : 0;
+                star = diff.stars;
+                parityErrors = (diff.paritySummary != null) ? diff.paritySummary.errors : 0;
+                parityWarns = (diff.paritySummary != null) ? diff.paritySummary.warns : 0;
+                parityResets = (diff.paritySummary != null) ? diff.paritySummary.resets : 0;
+                return this;
+            }
+            catch (Exception e)
+            {
+                Plugin.Log.Debug($"BeatSaver.MapDetail is invalid. {level.hash}/{level.difficulty}/{level.mode} is not found. {e}");
+                throw new Exception($"Failed to get map data from Beat Server.");
+            }
+        }
+
+        public override string ToString()
+        {
+            string s = $"HASH=[{hash}]\nKey=[{key}] Mapper=[{mapperName}]\n";
+            s += $"DURATION=[{(int)duration / 60}:{(int)duration % 60:00}] BPM=[{bpm}]\n";
+            s += $"NPS=[{nps:0.##}] NOTE=[{notes}] OB=[{ob}] BOMB=[{bombs}]\n";
+            s += $"NJS=[{njs:0.##}] JD=[{jd:0.##}] OFFSET=[{offset:0.##}] RT=[{rt:0.##}]";
+            return s;
+        }
+    }
+
+    public class LevelOverview
+    {
+        public string levelID;
+
+        public BeatmapDifficulty difficulty;
+
+        public string mode;
+
+        public string hash = "";
+
+        public enum MapType
+        {
+            NotSelect,
+            Official,
+            Custom,
+        }
+
+        public LevelOverview()
+        {
+            levelID = "";
+            difficulty = BeatmapDifficulty.Easy;
+            mode = "";
+        }
+
+        public LevelOverview(string levelID, BeatmapDifficulty difficulty, string mode)
+        {
+            this.levelID = levelID;
+            this.difficulty = difficulty;
+            this.mode = mode;
+            if (this.levelID.Length == 53)
+            {
+                this.hash = levelID.Substring(13).ToUpper();
+            }
+        }
+
+        public LevelOverview(PreviewDifficultyBeatmap beatmap)
+        {
+            this.levelID = beatmap.beatmapLevel.levelID;
+            this.difficulty = beatmap.beatmapDifficulty;
+            this.mode = beatmap.beatmapCharacteristic.serializedName;
+            if (this.levelID.Length == 53)
+            {
+                this.hash = this.levelID.Substring(13).ToUpper();
+            }
+        }
+
+        public static bool operator ==(LevelOverview lhs, LevelOverview rhs)
+        {
+            if (ReferenceEquals(lhs, rhs))
+            {
+                return true;
+            }
+
+            if (lhs is null || rhs is null)
+            {
+                return false;
+            }
+
+            return lhs.Equals(rhs);
+        }
+
+        public static bool operator !=(LevelOverview lhs, LevelOverview rhs)
+        {
+            return !(lhs == rhs);
+        }
+
+        public override bool Equals(object o)
+        {
+            if (o == null || GetType() != o.GetType())
+            {
+                return false;
+            }
+
+            LevelOverview other = (LevelOverview)o;
+            return levelID == other.levelID && difficulty == other.difficulty && mode == other.mode && hash == other.hash;
+        }
+
+        public override int GetHashCode()
+        {
+            int hash = 17;
+            hash = hash * 31 + (levelID == null ? 0 : levelID.GetHashCode());
+            hash = hash * 31 + difficulty.GetHashCode();
+            hash = hash * 31 + (mode == null ? 0 : mode.GetHashCode());
+            hash = hash * 31 + (this.hash == null ? 0 : this.hash.GetHashCode());
+            return hash;
+        }
+
+        public MapType GetMapType()
+        {
+            if (levelID.Length == 0)
+            {
+                return MapType.NotSelect;
+            }
+            else if (levelID.Length != 53)
+            {
+                return MapType.Official;
+            }
+            else
+            {
+                return MapType.Custom;
+            }
+        }
+    }
+
+    public enum SelectedByTarget
+    {
+        Own,
+        Host,
+    }
+
+    public enum MultiMode
+    {
+        None,
+        BeatTogether,
+        MultiplayerPlus,
     }
 }
