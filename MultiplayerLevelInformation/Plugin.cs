@@ -40,23 +40,25 @@ namespace MultiplayerLevelInformation
         [OnEnable]
         public void OnEnable()
         {
-            if (PluginManager.GetPlugin("BeatSaberPlus_Multiplayer") == null)
+            var mppPlugin = PluginManager.GetPlugin("BeatSaberPlus_Multiplayer");
+            if (mppPlugin == null)
             {
                 Log.Info("BeatSaberPlus_Multiplayer is Disable.");
             }
             else
             {
-                Log.Info("BeatSaberPlus_Multiplayer is Enable.");
-                _patcher.PatchForMultiplayerPlus();
+                Log.Info($"BeatSaberPlus_Multiplayer({mppPlugin.HVersion}) is Enable.");
+                _patcher.PatchForMultiplayerPlus(new System.Version(mppPlugin.HVersion.ToString()));
             }
 
-            if (PluginManager.GetPlugin("BeatTogether") == null)
+            var btgPlugin = PluginManager.GetPlugin("BeatTogether");
+            if (btgPlugin == null)
             {
                 Log.Info("BeatTogether is Disable.");
             }
             else
             {
-                Log.Info("BeatTogether is Enable.");
+                Log.Info($"BeatTogether({btgPlugin.HVersion}) is Enable.");
                 _patcher.PatchForBeatTogether();
             }
         }

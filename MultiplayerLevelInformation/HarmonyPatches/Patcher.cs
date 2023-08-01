@@ -20,64 +20,146 @@ namespace MultiplayerLevelInformation.HarmonyPatches
                 harmony.Patch(
                     BeatTogetherJoinLobyHarmony.TargetMethod(),
                     postfix: new HarmonyMethod(typeof(BeatTogetherJoinLobyHarmony).GetMethod("Postfix")));
+            }
+            catch (System.Exception e)
+            {
+                Plugin.Log.Error($"PatchForBeatTogether Failed: BeatTogetherJoinLobyHarmony");
+                Plugin.Log.Critical($"{e}");
+            }
 
+            try
+            {
                 harmony.Patch(
                     BeatTogetherLeaveLobyHarmony.TargetMethod(),
                     postfix: new HarmonyMethod(typeof(BeatTogetherLeaveLobyHarmony).GetMethod("Postfix")));
+            }
+            catch (System.Exception e)
+            {
+                Plugin.Log.Error($"PatchForBeatTogether Failed: BeatTogetherLeaveLobyHarmony");
+                Plugin.Log.Critical($"{e}");
+            }
 
+            try
+            {
                 harmony.Patch(
                     BeatTogetherSetLocalPlayerLevelHarmony.TargetMethod(),
                     prefix: new HarmonyMethod(typeof(BeatTogetherSetLocalPlayerLevelHarmony).GetMethod("Prefix")));
+            }
+            catch (System.Exception e)
+            {
+                Plugin.Log.Error($"PatchForBeatTogether Failed: BeatTogetherSetLocalPlayerLevelHarmony");
+                Plugin.Log.Critical($"{e}");
+            }
 
+            try
+            {
                 harmony.Patch(
                     BeatTogetherSetPlayerLevelHarmony.TargetMethod(),
                     postfix: new HarmonyMethod(typeof(BeatTogetherSetPlayerLevelHarmony).GetMethod("Postfix")));
+            }
+            catch (System.Exception e)
+            {
+                Plugin.Log.Error($"PatchForBeatTogether Failed: BeatTogetherSetPlayerLevelHarmony");
+                Plugin.Log.Critical($"{e}");
+            }
 
+            try
+            {
                 harmony.Patch(
                     BeatTogetherSetPlayerIsPartyOwnerHarmony.TargetMethod(),
                     postfix: new HarmonyMethod(typeof(BeatTogetherSetPlayerIsPartyOwnerHarmony).GetMethod("Postfix")));
             }
             catch (System.Exception e)
             {
-                Plugin.Log.Critical($"PatchForBeatTogether Failed: {e}");
+                Plugin.Log.Error($"PatchForBeatTogether Failed: BeatTogetherSetPlayerIsPartyOwnerHarmony");
+                Plugin.Log.Critical($"{e}");
             }
         }
 
-        public void PatchForMultiplayerPlus()
+        public void PatchForMultiplayerPlus(System.Version version)
         {
             try
             {
                 harmony.Patch(
                     MultiplayerPlusRoomCreateHarmony.TargetMethod(),
                     postfix: new HarmonyMethod(typeof(MultiplayerPlusRoomCreateHarmony).GetMethod("Postfix")));
+            }
+            catch (System.Exception e)
+            {
+                Plugin.Log.Critical($"PatchForMultiplayerPlus Failed: MultiplayerPlusRoomCreateHarmony");
+                Plugin.Log.Critical($"{e}");
+            }
 
+            try
+            {
                 harmony.Patch(
                     MultiplayerPlusRoomJoinHarmony.TargetMethod(),
                     postfix: new HarmonyMethod(typeof(MultiplayerPlusRoomJoinHarmony).GetMethod("Postfix")));
+            }
+            catch (System.Exception e)
+            {
+                Plugin.Log.Critical($"PatchForMultiplayerPlus Failed: MultiplayerPlusRoomJoinHarmony");
+                Plugin.Log.Critical($"{e}");
+            }
 
+            try
+            {
                 harmony.Patch(
                     MultiplayerPlusRoomPlayerJoinedHarmony.TargetMethod(),
                     postfix: new HarmonyMethod(typeof(MultiplayerPlusRoomPlayerJoinedHarmony).GetMethod("Postfix")));
+            }
+            catch (System.Exception e)
+            {
+                Plugin.Log.Critical($"PatchForMultiplayerPlus Failed: MultiplayerPlusRoomPlayerJoinedHarmony");
+                Plugin.Log.Critical($"{e}");
+            }
 
+            try
+            {
                 harmony.Patch(
                     MultiplayerPlusRoomPlayerLeavedHarmony.TargetMethod(),
                     postfix: new HarmonyMethod(typeof(MultiplayerPlusRoomPlayerLeavedHarmony).GetMethod("Postfix")));
+            }
+            catch (System.Exception e)
+            {
+                Plugin.Log.Critical($"PatchForMultiplayerPlus Failed: MultiplayerPlusRoomPlayerLeavedHarmony");
+                Plugin.Log.Critical($"{e}");
+            }
 
+            try
+            {
                 harmony.Patch(
                     MultiplayerPlusNetworkStatusChangeHarmony.TargetMethod(),
                     postfix: new HarmonyMethod(typeof(MultiplayerPlusNetworkStatusChangeHarmony).GetMethod("Postfix")));
+            }
+            catch (System.Exception e)
+            {
+                Plugin.Log.Critical($"PatchForMultiplayerPlus Failed: MultiplayerPlusNetworkStatusChangeHarmony");
+                Plugin.Log.Critical($"{e}");
+            }
 
+            try
+            {
                 harmony.Patch(
                     MultiplayerPlusRoomUpdateHarmony.TargetMethod(),
                     postfix: new HarmonyMethod(typeof(MultiplayerPlusRoomUpdateHarmony).GetMethod("Postfix")));
+            }
+            catch (System.Exception e)
+            {
+                Plugin.Log.Critical($"PatchForMultiplayerPlus Failed: MultiplayerPlusRoomUpdateHarmony");
+                Plugin.Log.Critical($"{e}");
+            }
 
+            try
+            {
                 harmony.Patch(
-                    MultiplayerPlusPlayerUpdateHarmony.TargetMethod(),
+                    MultiplayerPlusPlayerUpdateHarmony.TargetMethod(version),
                     postfix: new HarmonyMethod(typeof(MultiplayerPlusPlayerUpdateHarmony).GetMethod("Postfix")));
             }
             catch (System.Exception e)
             {
-                Plugin.Log.Critical($"PatchForMultiplayerPlus Failed: {e}");
+                Plugin.Log.Critical($"PatchForMultiplayerPlus Failed: MultiplayerPlusPlayerUpdateHarmony");
+                Plugin.Log.Critical($"{e}");
             }
         }
 

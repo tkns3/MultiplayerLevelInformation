@@ -131,7 +131,7 @@ namespace MultiplayerLevelInformation.Views
         {
             if (hashText.text.Length > 0)
             {
-                HMMainThreadDispatcher.instance.Enqueue(JumpToSong(hashText.text));
+                JumpToSong(hashText.text);
             }
         }
 
@@ -140,30 +140,30 @@ namespace MultiplayerLevelInformation.Views
         {
             if (LastPlayedLevelHash.Length > 0)
             {
-                HMMainThreadDispatcher.instance.Enqueue(JumpToSong(LastPlayedLevelHash));
+                JumpToSong(LastPlayedLevelHash);
             }
         }
 
-        private IEnumerator JumpToSong(string hash)
+        private void JumpToSong(string hash)
         {
             var x = UnityEngine.Object.FindObjectOfType<LevelCollectionTableView>();
             if (x == null)
             {
                 Plugin.Log.Warn("not found LevelCollectionTableView.");
-                yield break;
+                return;
             }
 
             if (!x.gameObject.activeSelf)
             {
                 Plugin.Log.Warn("LevelCollectionTableView is not active.");
-                yield break;
+                return;
             }
 
             CustomPreviewBeatmapLevel beatmap = SongCore.Loader.GetLevelByHash(hash);
             if (beatmap == null)
             {
                 Plugin.Log.Warn($"beatmapLevel is not found. hash={hash}");
-                yield break;
+                return;
             }
 
             x.SelectLevel(beatmap);

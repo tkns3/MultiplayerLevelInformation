@@ -421,10 +421,13 @@ namespace MultiplayerLevelInformation.HarmonyPatches
 
     public class MultiplayerPlusPlayerUpdateHarmony
     {
-
-        public static System.Reflection.MethodBase TargetMethod()
+        public static System.Reflection.MethodBase TargetMethod(System.Version version)
         {
             var type = System.Type.GetType("BeatSaberPlus_Multiplayer.UI.MultiplayerPRoomView, BeatSaberPlus_Multiplayer");
+            if (new System.Version(6, 0, 8) <= version)
+            {
+                type = System.Type.GetType("BeatSaberPlus_Multiplayer.UI.MultiplayerPRoomMainView, BeatSaberPlus_Multiplayer");
+            }
             var method = AccessTools.DeclaredMethod(type, "NetworkManager_OnRoomPlayerUpdated");
             return method;
         }

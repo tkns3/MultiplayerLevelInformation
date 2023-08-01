@@ -65,6 +65,7 @@
       <HintPath>$(BeatSaberDir)\Plugins\BS_Utils.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
     </Reference>
+    <Reference Include="Hive.Versioning, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null" />
     <Reference Include="SongCore, Version=3.10.1.0, Culture=neutral, processorArchitecture=MSIL">
       <Private>False</Private>
       <HintPath>$(BeatSaberDir)\Plugins\SongCore.dll</HintPath>
