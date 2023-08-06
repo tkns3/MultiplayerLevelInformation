@@ -1,16 +1,14 @@
-﻿using BeatSaberMarkupLanguage.Attributes;
+﻿using BeatSaberMarkupLanguage;
+using BeatSaberMarkupLanguage.Attributes;
 using BeatSaberMarkupLanguage.Components;
 using BeatSaberMarkupLanguage.ViewControllers;
+using MultiplayerLevelInformation.APIs;
 using System;
 using System.Collections;
-using System.Runtime.InteropServices;
-using System.Security.Policy;
+using System.Threading;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.Networking;
-using BeatSaberMarkupLanguage;
-using System.Threading;
 
 namespace MultiplayerLevelInformation.Views
 {
@@ -246,7 +244,7 @@ namespace MultiplayerLevelInformation.Views
         {
             hashText.text = level.hash;
             keyText.text = "-";
-            modeDifficultyText.text = $"{level.mode} / {DifficultyString(level.difficulty, "")}";
+            modeDifficultyText.text = $"{level.mapMode} / {DifficultyString(level.mapDifficulty, "")}";
             songText.text = "-";
             mapperText.text = "-";
             bpmText.text = "-";
@@ -268,7 +266,7 @@ namespace MultiplayerLevelInformation.Views
         {
             hashText.text = levelDetail.hash;
             keyText.text = levelDetail.key;
-            modeDifficultyText.text = $"{levelDetail.mode} / {DifficultyString(levelDetail.difficulty, levelDetail.difficultyLabel)}";
+            modeDifficultyText.text = $"{levelDetail.mapMode} / {DifficultyString(levelDetail.mapDifficulty, levelDetail.difficultyLabel)}";
             songText.text = levelDetail.songFullName;
             mapperText.text = $"[{levelDetail.mapperName}]";
             bpmText.text = $"{levelDetail.bpm:0.##}";
@@ -317,9 +315,9 @@ namespace MultiplayerLevelInformation.Views
                         {
                             foreach (var c in beatmap.previewDifficultyBeatmapSets)
                             {
-                                if (c.beatmapCharacteristic.serializedName == levelDetail.mode)
+                                if (c.beatmapCharacteristic.serializedName == levelDetail.beatmapCharacteristic)
                                 {
-                                    return beatmap.beatmapLevelData.GetDifficultyBeatmap(c.beatmapCharacteristic, levelDetail.difficulty);
+                                    return beatmap.beatmapLevelData.GetDifficultyBeatmap(c.beatmapCharacteristic, levelDetail.beatmapDifficulty);
                                 }
                             }
                             return null;
@@ -338,21 +336,13 @@ namespace MultiplayerLevelInformation.Views
             }
         }
 
-        private static string DifficultyString(BeatmapDifficulty difficulty, string label)
+        private static string DifficultyString(MapDifficulty mapDifficulty, string label)
         {
-            string getDifficultyString()
+            string s = mapDifficulty.ToString();
+            if (mapDifficulty == MapDifficulty.ExpertPlus)
             {
-                switch (difficulty)
-                {
-                    case BeatmapDifficulty.Easy: return "Easy";
-                    case BeatmapDifficulty.Normal: return "Normal";
-                    case BeatmapDifficulty.Hard: return "Hard";
-                    case BeatmapDifficulty.Expert: return "Expert";
-                    case BeatmapDifficulty.ExpertPlus: return "Expert+";
-                    default: return "Unknown";
-                }
+                s = "Expert+";
             }
-            string s = getDifficultyString();
             if (label.Length > 0)
             {
                 s += $" ({label})";

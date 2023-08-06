@@ -1,7 +1,6 @@
 ﻿using IPA;
 using IPA.Loader;
 using MultiplayerLevelInformation.HarmonyPatches;
-using MultiplayerLevelInformation.Utils;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;

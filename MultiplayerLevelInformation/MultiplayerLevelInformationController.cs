@@ -1,5 +1,6 @@
 ﻿using BeatSaberMarkupLanguage;
 using BeatSaberMarkupLanguage.FloatingScreen;
+using MultiplayerLevelInformation.APIs;
 using MultiplayerLevelInformation.HarmonyPatches;
 using MultiplayerLevelInformation.Utils;
 using MultiplayerLevelInformation.Views;
@@ -249,15 +250,29 @@ namespace MultiplayerLevelInformation
                         {
                             m_ViewController.SetDownloading(selectedLevel);
                             map = await APIs.BeatSaver.GetMapDetail(selectedLevel.hash);
+
+                            try
+                            {
+                                // ★の数値はScoreSaberのほうを使う
+                                var diff = map.GetDifficulty(selectedLevel.mapDifficulty, selectedLevel.mapMode);
+                                var leaderboard = await APIs.ScoreSaber.GetLeaderboard(selectedLevel.hash, diff.mapDifficulty, diff.mapMode);
+                                diff.stars = leaderboard.stars;
+                            }
+                            catch (Exception ex)
+                            {
+                                // Publish直後とかだと404 Not Foundが返ってくることもあるのでScoreSaberからの取得失敗は無視
+                                Plugin.Log.Debug($"{ex.Message}");
+                            }
                         }
 
                         var levelDetail = new LevelDetail().Assign(selectedLevel, map);
                         _ = m_mapDetailCaches.TryAdd(selectedLevel.hash, map);
                         m_ViewController.SetDownloaded(selectedLevel, levelDetail);
                     }
-                    catch (Exception e)
+                    catch (Exception ex)
                     {
-                        m_ViewController.SetFailed(selectedLevel, e.Message);
+                        Plugin.Log.Debug($"{ex.Message}");
+                        m_ViewController.SetFailed(selectedLevel, ex.Message);
                     }
                 }
             }
@@ -413,7 +428,7 @@ namespace MultiplayerLevelInformation
 
         private void OnPlayerSelectedLevelChanged(string userID, LevelOverview level)
         {
-            Plugin.Log.Debug($"OnPlayerSelectedLevelChanged: {userID}, {level.levelID}, {level.difficulty}, {level.mode}");
+            Plugin.Log.Debug($"OnPlayerSelectedLevelChanged: {userID}, {level.levelID}, {level.mapDifficulty}, {level.mapMode}");
 
             var lastLevel = GetLastSelectedLevel(userID);
             if (lastLevel == level)
@@ -485,11 +500,15 @@ namespace MultiplayerLevelInformation
 
         public string imageUrl;
 
-        public BeatmapDifficulty difficulty;
+        public BeatmapDifficulty beatmapDifficulty;
+
+        public MapDifficulty mapDifficulty;
 
         public string difficultyLabel;
 
-        public string mode;
+        public string beatmapCharacteristic;
+
+        public MapMode mapMode;
 
         public string key;
 
@@ -570,13 +589,15 @@ namespace MultiplayerLevelInformation
             }
             try
             {
-                var diff = map.versions[0].diffs.Single(d => d.difficulty == level.difficulty.ToString() && d.characteristic == level.mode);
+                var diff = map.GetDifficulty(level.mapDifficulty, level.mapMode);
                 levelID = level.levelID;
                 hash = map.versions[0].hash.ToUpper();
                 imageUrl = map.versions[0].coverURL;
-                difficulty = level.difficulty;
+                beatmapDifficulty = level.beatmapDifficulty;
+                mapDifficulty = level.mapDifficulty;
                 difficultyLabel = diff.label;
-                mode = level.mode;
+                beatmapCharacteristic = level.beatmapCharacteristic;
+                mapMode = level.mapMode;
                 key = map.id;
                 songName = map.metadata.songName;
                 songSubName = map.metadata.songSubName;
@@ -601,7 +622,7 @@ namespace MultiplayerLevelInformation
             }
             catch (Exception e)
             {
-                Plugin.Log.Debug($"BeatSaver.MapDetail is invalid. {level.hash}/{level.difficulty}/{level.mode} is not found. {e}");
+                Plugin.Log.Debug($"BeatSaver.MapDetail is invalid. {level.hash}/{level.mapDifficulty}/{level.mapMode} is not found. {e}");
                 throw new Exception($"Failed to get map data from Beat Server.");
             }
         }
@@ -620,9 +641,13 @@ namespace MultiplayerLevelInformation
     {
         public string levelID;
 
-        public BeatmapDifficulty difficulty;
+        public BeatmapDifficulty beatmapDifficulty;
 
-        public string mode;
+        public MapDifficulty mapDifficulty;
+
+        public string beatmapCharacteristic;
+
+        public MapMode mapMode;
 
         public string hash = "";
 
@@ -636,30 +661,48 @@ namespace MultiplayerLevelInformation
         public LevelOverview()
         {
             levelID = "";
-            difficulty = BeatmapDifficulty.Easy;
-            mode = "";
+            mapDifficulty = MapDifficulty.Easy;
+            mapMode = MapMode.Standard;
         }
 
-        public LevelOverview(string levelID, BeatmapDifficulty difficulty, string mode)
+        public void Initialize(string levelID, BeatmapDifficulty difficulty, string beatmapCharacteristic)
         {
             this.levelID = levelID;
-            this.difficulty = difficulty;
-            this.mode = mode;
+            beatmapDifficulty = difficulty;
+            switch (difficulty)
+            {
+                case BeatmapDifficulty.Easy: mapDifficulty = MapDifficulty.Easy; break;
+                case BeatmapDifficulty.Normal: mapDifficulty = MapDifficulty.Normal; break;
+                case BeatmapDifficulty.Hard: mapDifficulty = MapDifficulty.Hard; break;
+                case BeatmapDifficulty.Expert: mapDifficulty = MapDifficulty.Expert; break;
+                case BeatmapDifficulty.ExpertPlus: mapDifficulty = MapDifficulty.ExpertPlus; break;
+            }
+            this.beatmapCharacteristic = beatmapCharacteristic;
+            switch (beatmapCharacteristic)
+            {
+                case "Standard": mapMode = MapMode.Standard; break;
+                case "OneSaber": mapMode = MapMode.OneSaber; break;
+                case "NoArrows": mapMode = MapMode.NoArrows; break;
+                case "Lightshow": mapMode = MapMode.Lightshow; break;
+                case "90Degree": mapMode = MapMode.Degree90; break;
+                case "360Degree": mapMode = MapMode.Degree360; break;
+                case "Lawless": mapMode = MapMode.Lawless; break;
+                default: mapMode = MapMode.Unknown; break;
+            }
             if (this.levelID.Length == 53)
             {
                 this.hash = levelID.Substring(13).ToUpper();
             }
         }
 
+        public LevelOverview(string levelID, BeatmapDifficulty difficulty, string beatmapCharacteristic)
+        {
+            Initialize(levelID, difficulty, beatmapCharacteristic);
+        }
+
         public LevelOverview(PreviewDifficultyBeatmap beatmap)
         {
-            this.levelID = beatmap.beatmapLevel.levelID;
-            this.difficulty = beatmap.beatmapDifficulty;
-            this.mode = beatmap.beatmapCharacteristic.serializedName;
-            if (this.levelID.Length == 53)
-            {
-                this.hash = this.levelID.Substring(13).ToUpper();
-            }
+            Initialize(beatmap.beatmapLevel.levelID, beatmap.beatmapDifficulty, beatmap.beatmapCharacteristic.serializedName);
         }
 
         public static bool operator ==(LevelOverview lhs, LevelOverview rhs)
@@ -690,15 +733,15 @@ namespace MultiplayerLevelInformation
             }
 
             LevelOverview other = (LevelOverview)o;
-            return levelID == other.levelID && difficulty == other.difficulty && mode == other.mode && hash == other.hash;
+            return levelID == other.levelID && mapDifficulty == other.mapDifficulty && mapMode == other.mapMode && hash == other.hash;
         }
 
         public override int GetHashCode()
         {
             int hash = 17;
             hash = hash * 31 + (levelID == null ? 0 : levelID.GetHashCode());
-            hash = hash * 31 + difficulty.GetHashCode();
-            hash = hash * 31 + (mode == null ? 0 : mode.GetHashCode());
+            hash = hash * 31 + mapDifficulty.GetHashCode();
+            hash = hash * 31 + mapMode.GetHashCode();
             hash = hash * 31 + (this.hash == null ? 0 : this.hash.GetHashCode());
             return hash;
         }

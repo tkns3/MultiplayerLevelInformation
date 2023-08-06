@@ -134,6 +134,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="APIs\BeatSaver.cs" />
+    <Compile Include="APIs\Model.cs" />
+    <Compile Include="APIs\ScoreSaber.cs" />
     <Compile Include="HarmonyPatches\MultiplayerPlusHarmony.cs" />
     <Compile Include="HarmonyPatches\BeatTogetherHarmony.cs" />
     <Compile Include="HarmonyPatches\Patcher.cs" />
