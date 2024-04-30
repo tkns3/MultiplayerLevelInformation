@@ -13,6 +13,9 @@ namespace MultiplayerLevelInformation.HarmonyPatches
         public static Action<string, LevelOverview> OnPlayerSelectedLevelChanged;
         public static Action<string> OnHostChanged;
         public static Action<string> OnOwnUserIDNotify;
+        public static System.Version Version = new System.Version(0, 0);
+        public static bool IsOverV608 = false;
+        public static bool IsOverV622 = false;
 
         internal static int m_networkStatus = 0;
         internal static MultiplayerPlusClass.PlayerData m_Host = new MultiplayerPlusClass.PlayerData();
@@ -34,6 +37,13 @@ namespace MultiplayerLevelInformation.HarmonyPatches
         internal static LevelOverview CreateLevelOverview(MultiplayerPlusClass.Level level)
         {
             return new LevelOverview(level.LevelID, ToBeatmapDifficulty(level.Diff), level.CharacteristicSO);
+        }
+
+        internal static void SetVersion(System.Version version)
+        {
+            Version = version;
+            IsOverV608 = (version >= new System.Version(6, 0, 8));
+            IsOverV622 = (version >= new System.Version(6, 2, 2));
         }
     }
 
@@ -157,8 +167,8 @@ namespace MultiplayerLevelInformation.HarmonyPatches
             public static SMsgRoomCreateResult Parse(object sMsgRoomCreateResultObject)
             {
                 var m = new SMsgRoomCreateResult();
-                m.RoomInfo = RoomData.Parse(sMsgRoomCreateResultObject, "RoomInfo");
-                m.PlayerInfo = PlayerData.Parse(sMsgRoomCreateResultObject, "PlayerInfo");
+                m.RoomInfo = RoomData.Parse(sMsgRoomCreateResultObject, MultiplayerPlusHarmony.IsOverV622 ? "RoomData" : "RoomInfo");
+                m.PlayerInfo = PlayerData.Parse(sMsgRoomCreateResultObject, MultiplayerPlusHarmony.IsOverV622 ? "PlayerData" : "PlayerInfo");
                 return m;
             }
         }
@@ -421,10 +431,10 @@ namespace MultiplayerLevelInformation.HarmonyPatches
 
     public class MultiplayerPlusPlayerUpdateHarmony
     {
-        public static System.Reflection.MethodBase TargetMethod(System.Version version)
+        public static System.Reflection.MethodBase TargetMethod()
         {
             var type = System.Type.GetType("BeatSaberPlus_Multiplayer.UI.MultiplayerPRoomView, BeatSaberPlus_Multiplayer");
-            if (new System.Version(6, 0, 8) <= version)
+            if (MultiplayerPlusHarmony.IsOverV608)
             {
                 type = System.Type.GetType("BeatSaberPlus_Multiplayer.UI.MultiplayerPRoomMainView, BeatSaberPlus_Multiplayer");
             }

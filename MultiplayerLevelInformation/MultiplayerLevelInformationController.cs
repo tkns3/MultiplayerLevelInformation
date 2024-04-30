@@ -5,6 +5,7 @@ using MultiplayerLevelInformation.HarmonyPatches;
 using MultiplayerLevelInformation.Utils;
 using MultiplayerLevelInformation.Views;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -383,8 +384,9 @@ namespace MultiplayerLevelInformation
             }
         }
 
-        private void OnMultiplayerPlusJoinLoby()
+        private IEnumerator JoinLoby()
         {
+            yield return new WaitForSeconds(0f);
             Plugin.Log.Debug($"OnMultiplayerPlusJoinLoby: preMode={m_multiMode}");
 
             if (m_multiMode == MultiMode.BeatTogether)
@@ -408,8 +410,14 @@ namespace MultiplayerLevelInformation
             }
         }
 
-        private void OnMultiplayerPlusLeaveLoby()
+        private void OnMultiplayerPlusJoinLoby()
         {
+            StartCoroutine(JoinLoby());
+        }
+
+        private IEnumerator LeaveLoby()
+        {
+            yield return new WaitForSeconds(0f);
             Plugin.Log.Debug($"OnMultiplayerPlusLeaveLoby: preMode={m_multiMode}");
 
             if (m_multiMode != MultiMode.None)
@@ -426,29 +434,39 @@ namespace MultiplayerLevelInformation
             }
         }
 
-        private void OnPlayerSelectedLevelChanged(string userID, LevelOverview level)
+        private void OnMultiplayerPlusLeaveLoby()
         {
+            StartCoroutine(LeaveLoby());
+        }
+
+        private IEnumerator SelectLevel(string userID, LevelOverview level)
+        {
+            yield return new WaitForSeconds(0f);
             Plugin.Log.Debug($"OnPlayerSelectedLevelChanged: {userID}, {level.levelID}, {level.mapDifficulty}, {level.mapMode}");
 
             var lastLevel = GetLastSelectedLevel(userID);
-            if (lastLevel == level)
+            if (lastLevel != level)
             {
-                return;
-            }
+                SetLastSelectedLevel(userID, level);
 
-            SetLastSelectedLevel(userID, level);
-
-            if (userID == TargetUserID)
-            {
-                ChangeViewParameter(level);
+                if (userID == TargetUserID)
+                {
+                    ChangeViewParameter(level);
+                }
             }
         }
 
-        private void OnOwnUserIDNotify(string nextUserID)
+        private void OnPlayerSelectedLevelChanged(string userID, LevelOverview level)
         {
+            StartCoroutine(SelectLevel(userID, level));
+        }
+
+        private IEnumerator ChangeUserID(string nextUserID)
+        {
+            yield return new WaitForSeconds(0f);
             Plugin.Log.Debug($"OnOwnUserIDNotify: pre={m_ownUserID}, next={nextUserID}");
 
-            if (m_ownUserID == nextUserID) return;
+            if (m_ownUserID == nextUserID) yield break;
 
             m_ownUserID = nextUserID;
 
@@ -459,11 +477,17 @@ namespace MultiplayerLevelInformation
             }
         }
 
-        private void OnHostChanged(string nextHostUserID)
+        private void OnOwnUserIDNotify(string nextUserID)
         {
+            StartCoroutine(ChangeUserID(nextUserID));
+        }
+
+        private IEnumerator ChangeHost(string nextHostUserID)
+        {
+            yield return new WaitForSeconds(0f);
             Plugin.Log.Debug($"OnHostChanged: pre={m_hostUserID}, next={nextHostUserID}");
 
-            if (m_hostUserID == nextHostUserID) return;
+            if (m_hostUserID == nextHostUserID) yield break;
 
             m_hostUserID = nextHostUserID;
 
@@ -472,6 +496,11 @@ namespace MultiplayerLevelInformation
                 var lastSelectedLevel = GetLastSelectedLevel(TargetUserID);
                 ChangeViewParameter(lastSelectedLevel);
             }
+        }
+
+        private void OnHostChanged(string nextHostUserID)
+        {
+            StartCoroutine(ChangeHost(nextHostUserID));
         }
 
         private static UnityEngine.Material m_UINoGlowMaterial;
@@ -484,7 +513,9 @@ namespace MultiplayerLevelInformation
                     m_UINoGlowMaterial = UnityEngine.Resources.FindObjectsOfTypeAll<UnityEngine.Material>().Where(x => x.name == "UINoGlow").FirstOrDefault();
 
                     if (m_UINoGlowMaterial != null)
+                    {
                         m_UINoGlowMaterial = UnityEngine.Material.Instantiate(m_UINoGlowMaterial);
+                    }
                 }
 
                 return m_UINoGlowMaterial;

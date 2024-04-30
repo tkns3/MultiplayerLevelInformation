@@ -78,6 +78,8 @@ namespace MultiplayerLevelInformation.HarmonyPatches
 
         public void PatchForMultiplayerPlus(System.Version version)
         {
+            MultiplayerPlusHarmony.SetVersion(version);
+
             try
             {
                 harmony.Patch(
@@ -153,7 +155,7 @@ namespace MultiplayerLevelInformation.HarmonyPatches
             try
             {
                 harmony.Patch(
-                    MultiplayerPlusPlayerUpdateHarmony.TargetMethod(version),
+                    MultiplayerPlusPlayerUpdateHarmony.TargetMethod(),
                     postfix: new HarmonyMethod(typeof(MultiplayerPlusPlayerUpdateHarmony).GetMethod("Postfix")));
             }
             catch (System.Exception e)
