@@ -24,7 +24,7 @@ namespace MultiplayerLevelInformation.HarmonyPatches
             catch (System.Exception e)
             {
                 Plugin.Log.Error($"PatchForBeatTogether Failed: BeatTogetherJoinLobyHarmony");
-                Plugin.Log.Critical($"{e}");
+                Plugin.Log.Error($"{e}");
             }
 
             try
@@ -36,7 +36,7 @@ namespace MultiplayerLevelInformation.HarmonyPatches
             catch (System.Exception e)
             {
                 Plugin.Log.Error($"PatchForBeatTogether Failed: BeatTogetherLeaveLobyHarmony");
-                Plugin.Log.Critical($"{e}");
+                Plugin.Log.Error($"{e}");
             }
 
             try
@@ -48,7 +48,7 @@ namespace MultiplayerLevelInformation.HarmonyPatches
             catch (System.Exception e)
             {
                 Plugin.Log.Error($"PatchForBeatTogether Failed: BeatTogetherSetLocalPlayerLevelHarmony");
-                Plugin.Log.Critical($"{e}");
+                Plugin.Log.Error($"{e}");
             }
 
             try
@@ -60,7 +60,7 @@ namespace MultiplayerLevelInformation.HarmonyPatches
             catch (System.Exception e)
             {
                 Plugin.Log.Error($"PatchForBeatTogether Failed: BeatTogetherSetPlayerLevelHarmony");
-                Plugin.Log.Critical($"{e}");
+                Plugin.Log.Error($"{e}");
             }
 
             try
@@ -72,7 +72,7 @@ namespace MultiplayerLevelInformation.HarmonyPatches
             catch (System.Exception e)
             {
                 Plugin.Log.Error($"PatchForBeatTogether Failed: BeatTogetherSetPlayerIsPartyOwnerHarmony");
-                Plugin.Log.Critical($"{e}");
+                Plugin.Log.Error($"{e}");
             }
         }
 
@@ -88,8 +88,8 @@ namespace MultiplayerLevelInformation.HarmonyPatches
             }
             catch (System.Exception e)
             {
-                Plugin.Log.Critical($"PatchForMultiplayerPlus Failed: MultiplayerPlusRoomCreateHarmony");
-                Plugin.Log.Critical($"{e}");
+                Plugin.Log.Error($"PatchForMultiplayerPlus Failed: MultiplayerPlusRoomCreateHarmony");
+                Plugin.Log.Error($"{e}");
             }
 
             try
@@ -100,8 +100,8 @@ namespace MultiplayerLevelInformation.HarmonyPatches
             }
             catch (System.Exception e)
             {
-                Plugin.Log.Critical($"PatchForMultiplayerPlus Failed: MultiplayerPlusRoomJoinHarmony");
-                Plugin.Log.Critical($"{e}");
+                Plugin.Log.Error($"PatchForMultiplayerPlus Failed: MultiplayerPlusRoomJoinHarmony");
+                Plugin.Log.Error($"{e}");
             }
 
             try
@@ -112,8 +112,8 @@ namespace MultiplayerLevelInformation.HarmonyPatches
             }
             catch (System.Exception e)
             {
-                Plugin.Log.Critical($"PatchForMultiplayerPlus Failed: MultiplayerPlusRoomPlayerJoinedHarmony");
-                Plugin.Log.Critical($"{e}");
+                Plugin.Log.Error($"PatchForMultiplayerPlus Failed: MultiplayerPlusRoomPlayerJoinedHarmony");
+                Plugin.Log.Error($"{e}");
             }
 
             try
@@ -124,8 +124,8 @@ namespace MultiplayerLevelInformation.HarmonyPatches
             }
             catch (System.Exception e)
             {
-                Plugin.Log.Critical($"PatchForMultiplayerPlus Failed: MultiplayerPlusRoomPlayerLeavedHarmony");
-                Plugin.Log.Critical($"{e}");
+                Plugin.Log.Error($"PatchForMultiplayerPlus Failed: MultiplayerPlusRoomPlayerLeavedHarmony");
+                Plugin.Log.Error($"{e}");
             }
 
             try
@@ -136,8 +136,8 @@ namespace MultiplayerLevelInformation.HarmonyPatches
             }
             catch (System.Exception e)
             {
-                Plugin.Log.Critical($"PatchForMultiplayerPlus Failed: MultiplayerPlusNetworkStatusChangeHarmony");
-                Plugin.Log.Critical($"{e}");
+                Plugin.Log.Error($"PatchForMultiplayerPlus Failed: MultiplayerPlusNetworkStatusChangeHarmony");
+                Plugin.Log.Error($"{e}");
             }
 
             try
@@ -148,8 +148,8 @@ namespace MultiplayerLevelInformation.HarmonyPatches
             }
             catch (System.Exception e)
             {
-                Plugin.Log.Critical($"PatchForMultiplayerPlus Failed: MultiplayerPlusRoomUpdateHarmony");
-                Plugin.Log.Critical($"{e}");
+                Plugin.Log.Error($"PatchForMultiplayerPlus Failed: MultiplayerPlusRoomUpdateHarmony");
+                Plugin.Log.Error($"{e}");
             }
 
             try
@@ -160,8 +160,8 @@ namespace MultiplayerLevelInformation.HarmonyPatches
             }
             catch (System.Exception e)
             {
-                Plugin.Log.Critical($"PatchForMultiplayerPlus Failed: MultiplayerPlusPlayerUpdateHarmony");
-                Plugin.Log.Critical($"{e}");
+                Plugin.Log.Error($"PatchForMultiplayerPlus Failed: MultiplayerPlusPlayerUpdateHarmony");
+                Plugin.Log.Error($"{e}");
             }
         }
 
@@ -181,7 +181,7 @@ namespace MultiplayerLevelInformation.HarmonyPatches
             }
             catch (System.Exception e)
             {
-                Plugin.Log.Critical($"GetPrivateFieldValue: {name}, {e}");
+                Plugin.Log.Error($"GetPrivateFieldValue: {name}, {e}");
                 return default;
             }
         }
@@ -197,7 +197,7 @@ namespace MultiplayerLevelInformation.HarmonyPatches
             }
             catch (System.Exception e)
             {
-                Plugin.Log.Critical($"GetPrivatePropertyValue: {name}, {e}");
+                Plugin.Log.Error($"GetPrivatePropertyValue: {name}, {e}");
                 return default;
             }
         }

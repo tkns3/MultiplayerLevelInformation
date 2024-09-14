@@ -157,7 +157,7 @@ namespace MultiplayerLevelInformation.Views
                 return;
             }
 
-            CustomPreviewBeatmapLevel beatmap = SongCore.Loader.GetLevelByHash(hash);
+            var beatmap = SongCore.Loader.GetLevelByHash(hash);
             if (beatmap == null)
             {
                 Plugin.Log.Warn($"beatmapLevel is not found. hash={hash}");
@@ -281,8 +281,8 @@ namespace MultiplayerLevelInformation.Views
             offsetText.text = $"{levelDetail.offset:0.##}";
             rtText.text = $"{levelDetail.rt:0.##}";
 
-            var previewBeatmap = SongCore.Loader.GetLevelByHash(level.hash);
-            if (previewBeatmap == null)
+            BeatmapLevel beatmap = SongCore.Loader.GetLevelByHash(level.hash);
+            if (beatmap == null || beatmap.previewMediaData == null)
             {
                 StartCoroutine(downloadCoverImage());
 
@@ -297,41 +297,13 @@ namespace MultiplayerLevelInformation.Views
             else
             {
                 getCoverImage();
-                checkCrouchWalls();
 
                 async void getCoverImage()
                 {
                     CancellationTokenSource cts = new CancellationTokenSource();
                     CancellationToken token = cts.Token;
-                    var sprite = await previewBeatmap.GetCoverImageAsync(token);
+                    var sprite = await beatmap.previewMediaData.GetCoverSpriteAsync(token);
                     coverImage.sprite = sprite;
-                }
-
-                async void checkCrouchWalls()
-                {
-                    await Utils.Levels.LoadSong(previewBeatmap, (IBeatmapLevel beatmap) =>
-                    {
-                        IDifficultyBeatmap getDifficultyBeatmap()
-                        {
-                            foreach (var c in beatmap.previewDifficultyBeatmapSets)
-                            {
-                                if (c.beatmapCharacteristic.serializedName == levelDetail.beatmapCharacteristic)
-                                {
-                                    return beatmap.beatmapLevelData.GetDifficultyBeatmap(c.beatmapCharacteristic, levelDetail.beatmapDifficulty);
-                                }
-                            }
-                            return null;
-                        }
-
-                        var idb = getDifficultyBeatmap();
-                        if (idb is CustomDifficultyBeatmap customdiff)
-                        {
-                            if (Utils.BeatmapPatternDetection.CheckForCrouchWalls(customdiff.beatmapSaveData.obstacles))
-                            {
-                                wallText.text += " <b><size=3.0><color=#FF0>⚠</color></size></b>";
-                            }
-                        }
-                    });
                 }
             }
         }

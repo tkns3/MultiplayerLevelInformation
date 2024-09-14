@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 
 namespace MultiplayerLevelInformation.HarmonyPatches
 {
@@ -18,7 +19,7 @@ namespace MultiplayerLevelInformation.HarmonyPatches
     {
         public static System.Reflection.MethodBase TargetMethod()
         {
-            return typeof(MultiplayerLobbyConnectionController).GetMethod("HandleMultiplayerSessionManagerConnected");
+            return typeof(MultiplayerLobbyConnectionController).GetMethod("HandleMultiplayerSessionManagerConnected", BindingFlags.NonPublic | BindingFlags.Instance);
         }
 
         public static void Postfix()
@@ -49,9 +50,9 @@ namespace MultiplayerLevelInformation.HarmonyPatches
             return typeof(LobbyPlayersDataModel).GetMethod("SetLocalPlayerBeatmapLevel");
         }
 
-        public static void Prefix(PreviewDifficultyBeatmap beatmapLevel)
+        public static void Prefix(in BeatmapKey beatmapKey)
         {
-            if (beatmapLevel != null && beatmapLevel.beatmapLevel != null)
+            if (beatmapKey != null)
             {
                 Plugin.Log.Debug($"BeatTogetherHarmony: SetLocalPlayerBeatmapLevel");
                 BeatTogetherHarmony.m_isOwnerSetPlayerBeatmapLevel = true;
@@ -63,20 +64,20 @@ namespace MultiplayerLevelInformation.HarmonyPatches
     {
         public static System.Reflection.MethodBase TargetMethod()
         {
-            return typeof(LobbyPlayersDataModel).GetMethod("SetPlayerBeatmapLevel");
+            return typeof(LobbyPlayersDataModel).GetMethod("SetPlayerBeatmapLevel", BindingFlags.NonPublic | BindingFlags.Instance);
         }
 
-        public static void Postfix(string userId, PreviewDifficultyBeatmap beatmapLevel)
+        public static void Postfix(string userId, in BeatmapKey beatmapKey)
         {
-            if (beatmapLevel != null && beatmapLevel.beatmapLevel != null)
+            if (beatmapKey != null)
             {
-                Plugin.Log.Debug($"BeatTogetherHarmony: SetPlayerBeatmapLevel: {userId}, {beatmapLevel.beatmapLevel.levelID}, {beatmapLevel.beatmapDifficulty}, {beatmapLevel.beatmapCharacteristic.serializedName}");
+                Plugin.Log.Debug($"BeatTogetherHarmony: SetPlayerBeatmapLevel: {userId}, {beatmapKey.levelId}, {beatmapKey.difficulty}, {beatmapKey.beatmapCharacteristic.serializedName}");
                 if (BeatTogetherHarmony.m_isOwnerSetPlayerBeatmapLevel)
                 {
                     BeatTogetherHarmony.m_isOwnerSetPlayerBeatmapLevel = false;
                     BeatTogetherHarmony.OnOwnUserIDNotify?.Invoke(userId);
                 }
-                BeatTogetherHarmony.OnPlayerSelectedLevelChanged?.Invoke(userId, new LevelOverview(beatmapLevel));
+                BeatTogetherHarmony.OnPlayerSelectedLevelChanged?.Invoke(userId, new LevelOverview(beatmapKey.levelId, beatmapKey.difficulty, beatmapKey.beatmapCharacteristic.serializedName));
             }
         }
     }
@@ -85,7 +86,7 @@ namespace MultiplayerLevelInformation.HarmonyPatches
     {
         public static System.Reflection.MethodBase TargetMethod()
         {
-            return typeof(LobbyPlayersDataModel).GetMethod("SetPlayerIsPartyOwner");
+            return typeof(LobbyPlayersDataModel).GetMethod("SetPlayerIsPartyOwner", BindingFlags.NonPublic | BindingFlags.Instance);
         }
 
         public static void Postfix(string userId, bool isPartyOwner, bool notifyChange)

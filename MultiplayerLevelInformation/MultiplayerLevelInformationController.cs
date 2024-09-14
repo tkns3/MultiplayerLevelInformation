@@ -731,11 +731,6 @@ namespace MultiplayerLevelInformation
             Initialize(levelID, difficulty, beatmapCharacteristic);
         }
 
-        public LevelOverview(PreviewDifficultyBeatmap beatmap)
-        {
-            Initialize(beatmap.beatmapLevel.levelID, beatmap.beatmapDifficulty, beatmap.beatmapCharacteristic.serializedName);
-        }
-
         public static bool operator ==(LevelOverview lhs, LevelOverview rhs)
         {
             if (ReferenceEquals(lhs, rhs))

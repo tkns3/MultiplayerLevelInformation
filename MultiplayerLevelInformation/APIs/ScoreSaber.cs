@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
-using static StandardScoreSyncState;
 
 namespace MultiplayerLevelInformation.APIs
 {
@@ -81,7 +80,6 @@ namespace MultiplayerLevelInformation.APIs
             public long plays { get; set; }
             public long dailyPlays { get; set; }
             public string coverImage { get; set; } = "";
-            public Score? playerScore { get; set; }
             public List<DifficultyInfo> difficulties { get; set; } = new List<DifficultyInfo>();
 
             private string _songHash = "";
