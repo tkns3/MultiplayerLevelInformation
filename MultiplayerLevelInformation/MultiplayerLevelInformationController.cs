@@ -125,16 +125,16 @@ namespace MultiplayerLevelInformation
                 m_FloatingScreen.transform.SetParent(m_RootGameObject.transform);
                 m_FloatingScreen.gameObject.name = "MultiplayerLevelInformation.FloatingScreen";
                 m_FloatingScreen.HandleSide = FloatingScreen.Side.Bottom;
-                m_FloatingScreen.handle.transform.localScale = Vector3.one * 5.0f;
-                m_FloatingScreen.handle.transform.localPosition = new Vector3(-7.6f * 3, -16.8f, 0.0f);
-                m_FloatingScreen.handle.gameObject.GetComponent<Renderer>().material = m_FloatingScreenHandleMaterial;
+                m_FloatingScreen.Handle.transform.localScale = Vector3.one * 5.0f;
+                m_FloatingScreen.Handle.transform.localPosition = new Vector3(-7.6f * 3, -16.8f, 0.0f);
+                m_FloatingScreen.Handle.gameObject.GetComponent<Renderer>().material = m_FloatingScreenHandleMaterial;
                 m_FloatingScreen.HandleGrabbed += OnHandleGrabbed;
                 m_FloatingScreen.HandleReleased += OnHandleReleased;
                 m_FloatingScreen.transform.localScale = Vector3.one * 0.02f;
                 m_FloatingScreen.transform.localPosition = (multiMode == MultiMode.MultiplayerPlus) ? m_MPScreenPositionLast : m_BTScreenPositionLast;
                 m_FloatingScreen.transform.localRotation = (multiMode == MultiMode.MultiplayerPlus) ? m_MPScreenRotationLast : m_BTScreenRotationLast;
 
-                var pointerHandler = m_FloatingScreen.handle.AddComponent<PointerHandler>();
+                var pointerHandler = m_FloatingScreen.Handle.AddComponent<PointerHandler>();
                 pointerHandler.OnPointerEnter1 += OnHandlePointerEnter;
                 pointerHandler.OnPointerExit1 += OnHandlePointerExit;
 

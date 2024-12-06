@@ -300,9 +300,7 @@ namespace MultiplayerLevelInformation.Views
 
                 async void getCoverImage()
                 {
-                    CancellationTokenSource cts = new CancellationTokenSource();
-                    CancellationToken token = cts.Token;
-                    var sprite = await beatmap.previewMediaData.GetCoverSpriteAsync(token);
+                    var sprite = await beatmap.previewMediaData.GetCoverSpriteAsync();
                     coverImage.sprite = sprite;
                 }
             }
